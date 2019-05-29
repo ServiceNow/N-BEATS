@@ -1,0 +1,25 @@
+build.experiment_name='traffic_generic'
+
+instance.model_type = 'generic'
+
+instance.history_size = 10
+instance.iterations = {
+    'deepar': 24000,
+    'deepfactors': 12000,
+    'last': 12000
+}
+
+generic.layer_size = 512
+generic.layers = 4
+generic.stacks = 30
+
+TimeseriesSampler.batch_size = 1024
+trainer.learning_rate = 0.001
+
+SnapshotManager.logging_frequency = 100
+SnapshotManager.snapshot_frequency = 1000
+
+# Ensemble parameters
+build.repeats = 10
+build.lookbacks = [2, 3, 4, 5, 6, 7]
+build.losses = ['SMAPE']

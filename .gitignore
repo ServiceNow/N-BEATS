@@ -1,0 +1,19 @@
+# Storage
+storage/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# SageMath parsed files
+*.sage.py
+
+# IDE
+.idea/

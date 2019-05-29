@@ -1,0 +1,36 @@
+build.experiment_name='m4_generic'
+
+instance.model_type = 'generic'
+
+instance.history_size = {
+    'Yearly': 1.5,
+    'Quarterly': 1.5,
+    'Monthly': 1.5,
+    'Weekly': 10,
+    'Daily': 10,
+    'Hourly': 10
+}
+
+instance.iterations = {
+    'Yearly': 15000,
+    'Quarterly': 15000,
+    'Monthly': 15000,
+    'Weekly': 5000,
+    'Daily': 5000,
+    'Hourly': 5000
+}
+
+generic.layer_size = 512
+generic.layers = 4
+generic.stacks = 30
+
+TimeseriesSampler.batch_size = 1024
+trainer.learning_rate = 0.001
+
+SnapshotManager.logging_frequency = 100
+SnapshotManager.snapshot_frequency = 1000
+
+# Ensemble parameters
+build.repeats = 10
+build.lookbacks = [2, 3, 4, 5, 6, 7]
+build.losses = ['MASE', 'MAPE', 'SMAPE']
