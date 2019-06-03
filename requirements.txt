@@ -1,0 +1,16 @@
+Bottleneck
+gitpython
+h5py
+keras
+numpy
+pandas
+patool
+pymongo
+pytest
+requests
+scipy
+sklearn
+statsmodels
+stldecompose
+tensorflow-gpu==1.13.1
+tqdm
