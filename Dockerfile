@@ -23,8 +23,6 @@ RUN pip3 install --upgrade pip setuptools wheel
 
 # Install requirements
 COPY requirements.txt .
-COPY requirements-gpu.txt .
-RUN pip install -r requirements-gpu.txt
 RUN pip install -r requirements.txt
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 

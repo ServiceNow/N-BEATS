@@ -52,8 +52,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('cmd', metavar='CMD', type=str, choices=['load_training_dataset'],
                         help='Command to execute')
+    parser.add_argument('name', type=str, default='', help='Experiment name')
 
     args = parser.parse_args()
 
     if args.cmd == 'load_training_dataset':
         load_training_dataset()
+    elif args.cmd == 'init_ensembles':
+        init_ensembles(args.name)
