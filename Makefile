@@ -6,6 +6,6 @@ DOCKER_CMD = docker run --rm -v ${PROJECT_DIR}:/project -w /project -e PYTHONPAT
 build:
 	docker build . -t ${IMAGE_NAME}
 
-laod_training_dataset:
+load_training_dataset:
 	@eval ${DOCKER_CMD} bash -c 'python m4_main.py load_training_dataset'
 
