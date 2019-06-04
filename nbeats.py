@@ -14,13 +14,13 @@ class NBeatsBlock:
                  layers: int,
                  forecast_horizon: int,
                  activation_fn=tf.nn.relu,
-                 weights_regularizer=None):
+                 regularizer=None):
         super().__init__()
         self.hidden_units = hidden_units
         self.layers = layers
         self.forecast_horizon = forecast_horizon
         self.activation_fn = activation_fn
-        self.weights_regularizer = weights_regularizer
+        self.regularizer = regularizer
 
     def build(self, inputs):
         inputs = self.fc(inputs)
@@ -34,7 +34,7 @@ class NBeatsBlock:
         for i in range(self.layers):
             inputs = slim.fully_connected(inputs=inputs,
                                           num_outputs=self.hidden_units,
-                                          weights_regularizer=self.weights_regularizer,
+                                          weights_regularizer=self.regularizer,
                                           activation_fn=self.activation_fn,
                                           scope=f'fc_{i}')
         return inputs
@@ -48,7 +48,7 @@ class NBeatsBlock:
         """
         basis_output = slim.fully_connected(inputs=inputs,
                                             num_outputs=self.forecast_horizon + inputs.shape.as_list()[-1],
-                                            weights_regularizer=self.weights_regularizer,
+                                            weights_regularizer=self.regularizer,
                                             activation_fn=None,
                                             scope='basis_output')
         return basis_output[:, self.forecast_horizon:], basis_output[:, :self.forecast_horizon]
@@ -61,8 +61,8 @@ class NBeatsPolynomialBlock(NBeatsBlock):
                  polynomial_order: int,
                  forecast_horizon: int,
                  activation_fn=tf.nn.relu,
-                 weights_regularizer=None):
-        super().__init__(hidden_units, layers, forecast_horizon, activation_fn, weights_regularizer)
+                 regularizer=None):
+        super().__init__(hidden_units, layers, forecast_horizon, activation_fn, regularizer)
         self.polynomial_order = polynomial_order
 
     def basis(self, inputs):
@@ -74,7 +74,7 @@ class NBeatsPolynomialBlock(NBeatsBlock):
         """
         basis_output = slim.fully_connected(inputs,
                                             num_outputs=2 * (self.polynomial_order + 1),
-                                            weights_regularizer=self.weights_regularizer,
+                                            weights_regularizer=self.regularizer,
                                             activation_fn=None,
                                             scope='polynomial_basis_output')
         # Produce forecast trend synthesis
@@ -98,8 +98,8 @@ class NBeatsHarmonicsBlock(NBeatsBlock):
                  num_of_harmonics: int,
                  forecast_horizon: int,
                  activation_fn=tf.nn.relu,
-                 weights_regularizer=None):
-        super().__init__(hidden_units, layers, forecast_horizon, activation_fn, weights_regularizer)
+                 regularizer=None):
+        super().__init__(hidden_units, layers, forecast_horizon, activation_fn, regularizer)
         self.num_of_harmonics = num_of_harmonics
 
     def basis(self, inputs):
@@ -112,7 +112,7 @@ class NBeatsHarmonicsBlock(NBeatsBlock):
         num_basis_fns = int(np.ceil(self.num_of_harmonics / 2 * self.forecast_horizon) - (self.num_of_harmonics - 1))
         season_weights = slim.fully_connected(inputs=inputs,
                                               num_outputs=4 * num_basis_fns,
-                                              weights_regularizer=self.weights_regularizer,
+                                              weights_regularizer=self.regularizer,
                                               activation_fn=None,
                                               scope=self.scope)
         # Produce forecast seasonality synthesis

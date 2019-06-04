@@ -12,16 +12,40 @@ input_mask_file_name = 'input_mask.npz'
 
 class ExperimentParameters(NamedTuple):
     repeat: int
+
+    # dataset
     training_split: str
     input_size: int
     ts_per_model_ratio: float
     input_dropout: float
     batch_size: int
-    iterations: int
+
+    # training parameters
     loss_name: str
     init_lr: float
+    weight_decay: float
+    iterations: int
+
     training_checkpoint_interval: int
+
+    # model architecture
     model_type: str
+
+    # generic model parameters (these parameters will be ignored for 'interpretable' model type)
+    stacks: int
+    blocks_in_stack: int
+    block_fc_size: int
+    block_fc_layers: int
+
+    # interpretable model parameters (these parameters will be ignored for 'generic' model type)
+    trend_blocks: int
+    trend_block_fc_size: int
+    trend_block_fc_layers: int
+    trend_order: int
+    seasonality_blocks: int
+    seasonality_block_fc_size: int
+    seasonality_block_fc_layers: int
+    seasonality_num_harmonics: int
 
     def persist(self, file_path: str) -> None:
         with open(file_path, 'w') as f:

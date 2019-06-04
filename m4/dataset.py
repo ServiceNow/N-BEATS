@@ -3,7 +3,7 @@ import os
 from collections import OrderedDict
 from enum import Enum
 from glob import glob
-from typing import Dict, List, NamedTuple
+from typing import NamedTuple
 
 import numpy as np
 import patoolib

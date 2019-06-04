@@ -1,7 +1,5 @@
 import logging
 import os
-import pickle
-from typing import Callable, Optional
 
 import numpy as np
 import tensorflow as tf
@@ -10,44 +8,19 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import init_ops, random_ops
 
 from m4.dataset import M4Info, M4Dataset, M4DatasetSplit
+from m4.experiment import M4Experiment
 from m4.settings import M4_INPUT_MAXSIZE
 from m4.utils import summary_log
 from nbeats import NBeats, NBeatsStack, NBeatsBlock, NBeatsHarmonicsBlock, NBeatsPolynomialBlock
 
 
-def train(training_dir_path: str,
-          training_split: M4DatasetSplit,
-          validation_split: Optional[M4DatasetSplit],
-          training_checkpoint_interval: int,
-          validation_checkpoint_interval: int,
-          input_horizons: int,
-          ts_per_model: int,
-          features_mask,  # TODO: same as features_subset
-          loss_name: str,
-          batch_size: int,
-          iterations: int,
-          init_lr: float,
-          model_fn: Callable[[int], NBeats]):
-    #
-    # Load data
-    #
+def train(experiment_path: str):
     m4_info = M4Info()
+    experiment = M4Experiment.load(experiment_path)
 
-    # Load sampled time series for the training instance.
-    ts_ids_file_path = os.path.join(training_dir_path, 'ts_ids.pickle')
-    if not os.path.isfile(ts_ids_file_path):
-        with open(ts_ids_file_path, 'wb') as f:
-            pickle.dump(np.random.choice(m4_info.ids,
-                                         size=int(ts_per_model * m4_info.total_number_of_timeseries),
-                                         replace=False), f)
-
-    with open(ts_ids_file_path, 'rb') as f:
-        ts_ids_subset = pickle.load(f)
-
-    training_set = M4Dataset(split=training_split)
-    validation_set = M4Dataset(split=validation_split) if validation_split is not None else None
-
-    # TODO: load features subset
+    training_set = M4Dataset(split=M4DatasetSplit[experiment.parameters.training_split.upper()])
+    batch_size = experiment.parameters.batch_size
+    loss_name = experiment.parameters.loss_name
 
     #
     # Main graph
@@ -78,7 +51,7 @@ def train(training_dir_path: str,
         with tf.variable_scope('M4-model'):
             for horizon in m4_info.horizons:
                 with tf.variable_scope(f'horizon_{horizon}', reuse=False):
-                    input_size = min(input_horizons * horizon, M4_INPUT_MAXSIZE)
+                    input_size = min(experiment.parameters.input_size * horizon, M4_INPUT_MAXSIZE)
                     model_input = inputs[:, input_size]
 
                     # delevel input of Hourly and Weekly
@@ -87,8 +60,25 @@ def train(training_dir_path: str,
                     model_input = model_input - model_input[:, :1] - 0.01
                     model_input = tf.multiply(model_input, tf.cast(mask, model_input.dtype))
 
-                    model_input = tf.multiply(model_input, features_mask[None, :input_size], name='features_subset')
-                    model = model_fn(horizon)
+                    model_input = tf.multiply(model_input, experiment.input_mask[None, :input_size],
+                                              name='features_subset')
+                    model = interpretable_basis(trend_blocks=experiment.parameters.trend_blocks,
+                                                trend_block_fc_size=experiment.parameters.trend_block_fc_size,
+                                                trend_block_fc_layers=experiment.parameters.trend_block_fc_layers,
+                                                trend_order=experiment.parameters.trend_order,
+                                                seasonality_blocks=experiment.parameters.seasonality_blocks,
+                                                seasonality_block_fc_size=experiment.parameters.seasonality_block_fc_size,
+                                                seasonality_block_fc_layers=experiment.parameters.seasonality_block_fc_layers,
+                                                seasonality_num_harmonics=experiment.parameters.seasonality_num_harmonics,
+                                                forecast_horizon=horizon,
+                                                weight_decay=experiment.parameters.weight_decay) \
+                        if experiment.parameters.model_type == 'interpretable' \
+                        else generic_basis(stacks=experiment.parameters.stacks,
+                                           blocks_in_stack=experiment.parameters.blocks_in_stack,
+                                           block_fc_size=experiment.parameters.block_fc_size,
+                                           block_fc_layers=experiment.parameters.block_fc_layers,
+                                           forecast_horizon=horizon,
+                                           weight_decay=experiment.parameters.weight_decay)
                     models[horizon] = model.build(model_input)
 
         # Training operations
@@ -115,8 +105,9 @@ def train(training_dir_path: str,
                     raise Exception(f'Loss {loss_name} not implemented')
 
         # Learning rate
-        lr_decay_step = iterations // 3  # decay 3 times
-        learning_rate = tf.train.exponential_decay(init_lr, global_step, lr_decay_step, 0.5, staircase=True)
+        lr_decay_step = experiment.parameters.iterations // 3  # decay 3 times
+        learning_rate = tf.train.exponential_decay(experiment.parameters.init_lr, global_step, lr_decay_step, 0.5,
+                                                   staircase=True)
         regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
 
         # Optimizer
@@ -129,10 +120,10 @@ def train(training_dir_path: str,
                                                                          clip_gradient_norm=1.0)
 
         # Training Summary
-        log_dir_path = os.path.join(training_dir_path, 'logs')
+        log_dir_path = os.path.join(experiment_path, 'logs')
         tf.summary.scalar('learning_rate', learning_rate)
         summary = tf.summary.merge(tf.get_collection('summaries'))
-        summary_writer = tf.summary.FileWriter(training_dir_path, flush_secs=1)
+        summary_writer = tf.summary.FileWriter(experiment_path, flush_secs=1)
         train_log_writer = summary_log(log_dir_path, writer=summary_writer)
         saver = tf.train.Saver(max_to_keep=1, save_relative_paths=True)
         supervisor = tf.train.Supervisor(logdir=log_dir_path,
@@ -152,7 +143,7 @@ def train(training_dir_path: str,
             if checkpoint_step > 0:
                 checkpoint_step += 1
             train_log_results = dict()
-            for step in range(checkpoint_step, iterations):
+            for step in range(checkpoint_step, experiment.parameters.iterations):
                 with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
                     batch = training_set.next_batch(batch_size=batch_size)
                     feed_dict = {
@@ -164,7 +155,7 @@ def train(training_dir_path: str,
                     batch_loss = sess.run(training_operations[batch.horizon], feed_dict=feed_dict)
                     train_log_results[f'train_loss/horizon_{batch.horizon}'] = batch_loss
 
-                    if step % training_checkpoint_interval == 0:
+                    if step % experiment.parameters.training_checkpoint_interval == 0:
                         train_log_writer(step, **train_log_results)
                         logging.info(f'step {step}, loss: {batch_loss}')
                         summary_str = sess.run(summary, feed_dict=feed_dict)
@@ -179,14 +170,13 @@ def generic_basis(stacks: int,
                   block_fc_size: int,
                   block_fc_layers: int,
                   forecast_horizon: int,
-                  activation_fn,
-                  weights_regularizer):
+                  weight_decay: float,
+                  activation_fn=tf.nn.relu):
     return NBeats([NBeatsStack([NBeatsBlock(hidden_units=block_fc_size,
                                             layers=block_fc_layers,
                                             forecast_horizon=forecast_horizon,
                                             activation_fn=activation_fn,
-                                            weights_regularizer=weights_regularizer
-                                            )
+                                            regularizer=tf.contrib.layers.l2_regularizer(scale=weight_decay))
                                 for _ in range(blocks_in_stack)])
                    for _ in range(stacks)])
 
@@ -200,21 +190,23 @@ def interpretable_basis(trend_blocks: int,
                         seasonality_block_fc_layers: int,
                         seasonality_num_harmonics: int,
                         forecast_horizon: int,
-                        activation_fn,
-                        weights_regularizer):
+                        weight_decay: float,
+                        activation_fn=tf.nn.relu):
     trend_stack = NBeatsStack([NBeatsPolynomialBlock(hidden_units=trend_block_fc_size,
                                                      layers=trend_block_fc_layers,
                                                      polynomial_order=trend_order,
                                                      forecast_horizon=forecast_horizon,
                                                      activation_fn=activation_fn,
-                                                     weights_regularizer=weights_regularizer)
+                                                     regularizer=tf.contrib.layers.l2_regularizer(
+                                                         scale=weight_decay))
                                for _ in range(trend_blocks)])
     seasonality_stack = NBeatsStack([NBeatsHarmonicsBlock(hidden_units=seasonality_block_fc_size,
                                                           layers=seasonality_block_fc_layers,
                                                           num_of_harmonics=seasonality_num_harmonics,
                                                           forecast_horizon=forecast_horizon,
                                                           activation_fn=activation_fn,
-                                                          weights_regularizer=weights_regularizer)
+                                                          regularizer=tf.contrib.layers.l2_regularizer(
+                                                              scale=weight_decay))
                                      for _ in range(seasonality_blocks)])
     return NBeats([trend_stack, seasonality_stack])
 
