@@ -80,7 +80,7 @@ def train_model(experiment_rel_path: str):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('cmd', metavar='CMD', type=str, choices=['load_training_dataset', 'init_experiment'],
+    parser.add_argument('cmd', metavar='CMD', type=str, choices=['load_training_dataset', 'init_experiment', 'train'],
                         help='Command to execute')
     parser.add_argument('--name', type=str, default='', help='Experiment name')
 
