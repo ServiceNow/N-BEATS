@@ -11,8 +11,8 @@ M4_INFO_URL = 'https://www.m4.unic.ac.cy/wp-content/uploads/2018/12/M4Info.csv'
 #
 # Settings for default environment (see Docker setup in README)
 #
-DEFAULT_DATA_DIR = os.path.join(os.sep, 'M4', 'dataset')
-DEFAULT_EXPERIMENTS_DIR = os.path.join(os.sep, 'M4', 'experiments')
+DEFAULT_DATA_DIR = os.path.join(os.sep, 'project', 'dataset')
+DEFAULT_EXPERIMENTS_DIR = os.path.join(os.sep, 'project', 'experiments')
 
 #
 # Training settings
