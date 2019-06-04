@@ -49,7 +49,7 @@ def init_experiment(name: str = ''):
     timestamp = time.strftime(f'%y%m%d_%H%M%S')
     dataset = M4Dataset(split=M4DatasetSplit[training_parameters['training_split'].upper()])
     experiments_dir_path = os.path.join(M4_EXPERIMENTS_DIR, f'{timestamp}_{name}')
-    for parameters_instance in tqdm1(params_cartesian_product(training_parameters)):
+    for parameters_instance in tqdm(params_cartesian_product(training_parameters)):
         experiment_parameters = ExperimentParameters(**{**training_parameters, **parameters_instance})
         M4Experiment(parameters=experiment_parameters,
                      timeseries_indices=dataset.sample_indices(experiment_parameters.ts_per_model_ratio),
