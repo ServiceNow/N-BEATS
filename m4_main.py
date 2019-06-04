@@ -2,6 +2,8 @@ import argparse
 import os
 import time
 
+from tqdm import tqdm
+
 from m4.dataset import M4Dataset, M4DatasetSplit
 from m4.experiment import ExperimentParameters, M4Experiment
 from m4.settings import M4_EXPERIMENTS_DIR
@@ -47,8 +49,8 @@ def init_experiment(name: str = ''):
     timestamp = time.strftime(f'%y%m%d_%H%M%S')
     dataset = M4Dataset(split=M4DatasetSplit[training_parameters['training_split'].upper()])
     experiments_dir_path = os.path.join(M4_EXPERIMENTS_DIR, f'{timestamp}_{name}')
-    for i, parameters_instance in enumerate(params_cartesian_product(training_parameters)):
-        experiment_parameters = ExperimentParameters(**training_parameters, **parameters_instance)
+    for parameters_instance in tqdm1(params_cartesian_product(training_parameters)):
+        experiment_parameters = ExperimentParameters(**{**training_parameters, **parameters_instance})
         M4Experiment(parameters=experiment_parameters,
                      timeseries_indices=dataset.sample_indices(experiment_parameters.ts_per_model_ratio),
                      input_mask=build_input_mask(experiment_parameters.input_dropout)).\
