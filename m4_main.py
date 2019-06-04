@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from m4.dataset import M4Dataset, M4DatasetSplit
 from m4.experiment import ExperimentParameters, M4Experiment
+from m4.model import train
 from m4.settings import M4_EXPERIMENTS_DIR
 from m4.utils import build_experiment_name, params_cartesian_product, build_input_mask
 
@@ -73,6 +74,10 @@ def init_experiment(name: str = ''):
             persist(os.path.join(experiments_dir_path, build_experiment_name(parameters_instance)))
 
 
+def train_model(experiment_rel_path: str):
+    train(os.path.join(M4_EXPERIMENTS_DIR, experiment_rel_path))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('cmd', metavar='CMD', type=str, choices=['load_training_dataset', 'init_experiment'],
@@ -85,3 +90,5 @@ if __name__ == '__main__':
         load_training_dataset()
     elif args.cmd == 'init_experiment':
         init_experiment(args.name)
+    elif args.cmd == 'train':
+        train_model(args.name)
