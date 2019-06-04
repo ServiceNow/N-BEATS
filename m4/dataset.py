@@ -45,7 +45,7 @@ class M4Dataset:
                  split: M4DatasetSplit = M4DatasetSplit.TRAIN):
         self.split = split
         self.info = M4Info(M4_DATA_DIR)
-        self.data = self.__get_cached_dataset(os.path.join(M4_DATA_DIR, f'{self.training_split.value}_dataset.npz'))
+        self.data = self.__get_cached_dataset(os.path.join(M4_DATA_DIR, f'{self.split.value}_dataset.npz'))
 
     def sample_indices(self, ratio: float) -> np.ndarray:
         """
