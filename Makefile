@@ -12,6 +12,9 @@ load_training_dataset:
 init_experiment:
 	@eval ${DOCKER_CMD} python m4_main.py init_experiment
 
+train:
+	@eval ${DOCKER_CMD} python m4_main.py train
+
 bash:
 	@eval ${DOCKER_CMD} bash
 
