@@ -1,51 +1,58 @@
 import argparse
 import os
 import time
-from pathlib import Path
 
 from m4.dataset import M4Dataset, M4DatasetSplit
-from m4.experiment import Experiment
-from m4.settings import DEFAULT_EXPERIMENTS_DIR
+from m4.experiment import ExperimentParameters, M4Experiment
+from m4.settings import M4_EXPERIMENTS_DIR
+from m4.utils import build_experiment_name, params_cartesian_product, build_input_mask
 
 training_parameters = {
-    'dataset_split': 'train',
-    'training_checkpoint_interval': 1000,
-    'ts_per_model': 0.2,
+    'repeat': list(range(10)),  # must always be an array even for only one repeat, for example: [1]
+
+    # Training Dataset
+    'training_split': 'train',
+    'input_size': list(range(2, 8)),
+    'ts_per_model_ratio': 0.2,
     'input_dropout': 0.25,
     'batch_size': 1024,
     'iterations': 30001,
-    'init_lr': 0.001
+
+    # Loss
+    'loss_name': ['MASE', 'MAPE', 'SMAPE'],
+
+    # Optimization
+    'init_lr': 0.001,
+    'training_checkpoint_interval': 1000,
+
+    # Model architecture
+    'model_type': 'generic'
 }
 
 
 def load_training_dataset():
+    """
+    Load training datasets, it will download and cache dataset on the first run.
+
+    :return:
+    """
     M4Dataset(split=M4DatasetSplit.TRAIN)
     M4Dataset(split=M4DatasetSplit.TRAIN_SUBSET)
     M4Dataset(split=M4DatasetSplit.VALIDATION_SUBSET)
 
 
-def init_ensembles(name: str = ''):
-    timestamp = time.strftime('%y%m%d_%H%M%S')
-
-    for loss_name in ['MASE', 'MAPE', 'SMAPE']:
-        for input_horizons in range(2, 8):
-            for repeat in range(0, 10):
-                dir_name = f'loss={loss_name},input_h={input_horizons},repeat={repeat}'
-                generic_experiment_path = os.path.join(DEFAULT_EXPERIMENTS_DIR, f'{timestamp}_generic_{name}', dir_name)
-                interpretable_experiment_path = os.path.join(DEFAULT_EXPERIMENTS_DIR,
-                                                             f'{timestamp}_interpretable_{name}', dir_name)
-                Path(generic_experiment_path).mkdir(parents=True, exist_ok=False)
-                Path(interpretable_experiment_path).mkdir(parents=True, exist_ok=False)
-
-                Experiment(model_type='generic',
-                           loss_name=loss_name,
-                           input_horizons=input_horizons,
-                           **training_parameters).persist(generic_experiment_path)
-
-                Experiment(model_type='interpretable',
-                           loss_name=loss_name,
-                           input_horizons=input_horizons,
-                           **training_parameters).persist(interpretable_experiment_path)
+def init_experiment(name: str = ''):
+    if name == '':
+        name = training_parameters['model_type']
+    timestamp = time.strftime(f'%y%m%d_%H%M%S')
+    dataset = M4Dataset(split=M4DatasetSplit[training_parameters['training_split'].upper()])
+    experiments_dir_path = os.path.join(M4_EXPERIMENTS_DIR, f'{timestamp}_{name}')
+    for i, parameters_instance in enumerate(params_cartesian_product(training_parameters)):
+        experiment_parameters = ExperimentParameters(**training_parameters, **parameters_instance)
+        M4Experiment(parameters=experiment_parameters,
+                     timeseries_indices=dataset.sample_indices(experiment_parameters.ts_per_model_ratio),
+                     input_mask=build_input_mask(experiment_parameters.input_dropout)).\
+            persist(os.path.join(experiments_dir_path, build_experiment_name(parameters_instance)))
 
 
 if __name__ == '__main__':
@@ -58,5 +65,5 @@ if __name__ == '__main__':
 
     if args.cmd == 'load_training_dataset':
         load_training_dataset()
-    elif args.cmd == 'init_ensembles':
-        init_ensembles(args.name)
+    elif args.cmd == 'init_experiment':
+        init_experiment(args.name)

@@ -10,7 +10,7 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import init_ops, random_ops
 
 from m4.dataset import M4Info, M4Dataset, M4DatasetSplit
-from m4.settings import INPUT_MAXSIZE
+from m4.settings import M4_INPUT_MAXSIZE
 from m4.utils import summary_log
 from nbeats import NBeats, NBeatsStack, NBeatsBlock, NBeatsHarmonicsBlock, NBeatsPolynomialBlock
 
@@ -60,7 +60,7 @@ def train(training_dir_path: str,
 
         # TODO: check loop inversion
         with tf.variable_scope('inputs'):
-            inputs = tf.placeholder(shape=(batch_size, 1, INPUT_MAXSIZE),
+            inputs = tf.placeholder(shape=(batch_size, 1, M4_INPUT_MAXSIZE),
                                     name='inputs',
                                     dtype=tf.float32)
             masep = tf.placeholder(shape=(batch_size,),
@@ -78,7 +78,7 @@ def train(training_dir_path: str,
         with tf.variable_scope('M4-model'):
             for horizon in m4_info.horizons:
                 with tf.variable_scope(f'horizon_{horizon}', reuse=False):
-                    input_size = min(input_horizons * horizon, INPUT_MAXSIZE)
+                    input_size = min(input_horizons * horizon, M4_INPUT_MAXSIZE)
                     model_input = inputs[:, input_size]
 
                     # delevel input of Hourly and Weekly
