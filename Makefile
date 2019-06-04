@@ -9,8 +9,8 @@ build:
 load_training_dataset:
 	@eval ${DOCKER_CMD} python m4_main.py load_training_dataset
 
-init_ensembles:
-	@eval ${DOCKER_CMD} python m4_main.py init_ensembles
+init_experiment:
+	@eval ${DOCKER_CMD} python m4_main.py init_experiment
 
 bash:
 	@eval ${DOCKER_CMD} bash
