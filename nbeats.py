@@ -9,13 +9,16 @@ class NBeatsBlock:
     """
     Implementation of N-BEATS block.
     """
+
     def __init__(self,
+                 input_size: int,
                  hidden_units: int,
                  layers: int,
                  forecast_horizon: int,
                  activation_fn=tf.nn.relu,
                  regularizer=None):
         super().__init__()
+        self.input_size = input_size
         self.hidden_units = hidden_units
         self.layers = layers
         self.forecast_horizon = forecast_horizon
@@ -44,10 +47,10 @@ class NBeatsBlock:
         Non-parametric basis.
 
         :param inputs: Input tensor of shape (Batch, HiddenUnits)
-        :return: Backast and forecast tensors.
+        :return: Backcast and forecast tensors.
         """
         basis_output = slim.fully_connected(inputs=inputs,
-                                            num_outputs=self.forecast_horizon + inputs.shape.as_list()[-1],
+                                            num_outputs=int(self.forecast_horizon + self.input_size),
                                             weights_regularizer=self.regularizer,
                                             activation_fn=None,
                                             scope='basis_output')
@@ -56,13 +59,14 @@ class NBeatsBlock:
 
 class NBeatsPolynomialBlock(NBeatsBlock):
     def __init__(self,
+                 input_size: int,
                  hidden_units: int,
                  layers: int,
                  polynomial_order: int,
                  forecast_horizon: int,
                  activation_fn=tf.nn.relu,
                  regularizer=None):
-        super().__init__(hidden_units, layers, forecast_horizon, activation_fn, regularizer)
+        super().__init__(input_size, hidden_units, layers, forecast_horizon, activation_fn, regularizer)
         self.polynomial_order = polynomial_order
 
     def basis(self, inputs):
@@ -70,7 +74,7 @@ class NBeatsPolynomialBlock(NBeatsBlock):
         Polynomial basis.
 
         :param inputs: Input tensor of shape (Batch, HiddenUnits)
-        :return: Backast and forecast tensors.
+        :return: Backcast and forecast tensors.
         """
         basis_output = slim.fully_connected(inputs,
                                             num_outputs=2 * (self.polynomial_order + 1),
@@ -83,8 +87,7 @@ class NBeatsPolynomialBlock(NBeatsBlock):
         for i in range(1, self.polynomial_order + 1):
             forecast += tf.pow(t, float(i)) * basis_output[:, i, None]
         # Produce backcast trend synthesis, this signal will be used by the next analysis step
-        backcast_size = inputs.shape.as_list()[-1]
-        t_backcast = np.arange(backcast_size, dtype=np.float32)[None, ] / backcast_size
+        t_backcast = np.arange(self.input_size, dtype=np.float32)[None, ] / self.input_size
         backcast = basis_output[:, self.polynomial_order + 1, None]
         for i in range(1, self.polynomial_order + 1):
             backcast += tf.pow(t_backcast, float(i)) * basis_output[:, self.polynomial_order + 1 + i, None]
@@ -93,13 +96,14 @@ class NBeatsPolynomialBlock(NBeatsBlock):
 
 class NBeatsHarmonicsBlock(NBeatsBlock):
     def __init__(self,
+                 input_size: int,
                  hidden_units: int,
                  layers: int,
                  num_of_harmonics: int,
                  forecast_horizon: int,
                  activation_fn=tf.nn.relu,
                  regularizer=None):
-        super().__init__(hidden_units, layers, forecast_horizon, activation_fn, regularizer)
+        super().__init__(input_size, hidden_units, layers, forecast_horizon, activation_fn, regularizer)
         self.num_of_harmonics = num_of_harmonics
 
     def basis(self, inputs):
@@ -110,11 +114,11 @@ class NBeatsHarmonicsBlock(NBeatsBlock):
         :return: Backast and forecast tensors.
         """
         num_basis_fns = int(np.ceil(self.num_of_harmonics / 2 * self.forecast_horizon) - (self.num_of_harmonics - 1))
-        season_weights = slim.fully_connected(inputs=inputs,
-                                              num_outputs=4 * num_basis_fns,
-                                              weights_regularizer=self.regularizer,
-                                              activation_fn=None,
-                                              scope=self.scope)
+        harmonics_weights = slim.fully_connected(inputs=inputs,
+                                                 num_outputs=4 * num_basis_fns,
+                                                 weights_regularizer=self.regularizer,
+                                                 activation_fn=None,
+                                                 scope='harmonics_weights')
         # Produce forecast seasonality synthesis
         t = np.arange(self.forecast_horizon, dtype=np.float32)[:, None] / self.forecast_horizon
         freq = np.arange(self.num_of_harmonics, self.num_of_harmonics / 2 * self.forecast_horizon,
@@ -123,18 +127,18 @@ class NBeatsHarmonicsBlock(NBeatsBlock):
         freq = freq[None, :]
         cos_template = np.transpose(np.cos(2 * np.pi * t * freq))
         sin_template = np.transpose(np.sin(2 * np.pi * t * freq))
-        season_cos = tf.matmul(season_weights[:, :num_basis_fns], cos_template)
-        season_sin = tf.matmul(season_weights[:, num_basis_fns:2 * num_basis_fns], sin_template)
-        forecast = season_cos + season_sin
+        harmonics_cos = tf.matmul(harmonics_weights[:, :num_basis_fns], cos_template)
+        harmonics_sin = tf.matmul(harmonics_weights[:, num_basis_fns:2 * num_basis_fns], sin_template)
+        forecast = harmonics_cos + harmonics_sin
         # Produce backcast seasonality synthesis, this signal will be used by the next analysis step
-        backcast_size = inputs.shape.as_list()[-1]
-        t_backcast = -np.arange(backcast_size, dtype=np.float32)[:, None] / self.forecast_horizon
+        # TODO: clarify why /forecast_horizon and not /input_size
+        t_backcast = -np.arange(self.input_size, dtype=np.float32)[:, None] / self.forecast_horizon
         cos_template_backcast = np.transpose(np.cos(2 * np.pi * t_backcast * freq))
         sin_template_backcast = np.transpose(np.sin(2 * np.pi * t_backcast * freq))
-        season_cos_backcast = tf.matmul(season_weights[:, 2 * num_basis_fns:3 * num_basis_fns],
-                                        cos_template_backcast)
-        season_sin_backcast = tf.matmul(season_weights[:, 3 * num_basis_fns:], sin_template_backcast)
-        backcast = season_cos_backcast + season_sin_backcast
+        cos_backcast = tf.matmul(harmonics_weights[:, 2 * num_basis_fns:3 * num_basis_fns],
+                                 cos_template_backcast)
+        sin_backcast = tf.matmul(harmonics_weights[:, 3 * num_basis_fns:], sin_template_backcast)
+        backcast = cos_backcast + sin_backcast
 
         return backcast, forecast
 
@@ -148,7 +152,7 @@ class NBeatsStack:
         self.blocks = blocks
 
     def build(self, inputs):
-        with tf.variable_scope('nbeats-blocks', reuse=True):
+        with tf.variable_scope('nbeats-blocks', reuse=tf.AUTO_REUSE):
             residuals = inputs
             stack_forecast = []
             for block in self.blocks:
@@ -169,9 +173,9 @@ class NBeats:
 
     def build(self, inputs):
         residuals = inputs
-        global_forecast = 0.0
+        stacks_forecast = 0.0
         for i, stack in enumerate(self.stacks):
-            with tf.variable_scope(f'nbeats-stack-{i}', reuse=False):
+            with tf.variable_scope(f'nbeats-stack-{i}', reuse=tf.AUTO_REUSE):
                 residuals, forecast = stack.build(residuals)
-                global_forecast = global_forecast + forecast
-        return inputs[:, :1] + global_forecast
+                stacks_forecast = stacks_forecast + forecast
+        return inputs[:, :1] + stacks_forecast

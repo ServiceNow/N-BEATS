@@ -1,16 +1,18 @@
 import logging
 import os
+import random
 from collections import OrderedDict
 from enum import Enum
 from glob import glob
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import numpy as np
 import patoolib
 from tqdm import tqdm
 
-from m4.settings import M4_DATA_DIR, M4_INFO_URL, M4_TEST_SET_URL, M4_TRAINING_SET_URL
-from m4.utils import csv_to_df, download_url, url_file_name
+from m4.settings import M4_DATA_DIR, M4_INFO_URL, M4_INPUT_MAXSIZE, M4_SAMPLING_WINDOW_LIMIT, M4_TEST_SET_URL, \
+    M4_TRAINING_SET_URL
+from m4.utils import csv_to_df, download_url, get_masep, url_file_name
 
 
 class M4Info:
@@ -46,6 +48,8 @@ class M4Dataset:
         self.split = split
         self.info = M4Info(M4_DATA_DIR)
         self.data = self.__get_cached_dataset(os.path.join(M4_DATA_DIR, f'{self.split.value}_dataset.npz'))
+        # TODO: clarify that this is not really MASE for sampled data (although plays a role of a scaler).
+        self.masep = self.__get_cached_masep(os.path.join(M4_DATA_DIR, f'{self.split.value}_masep.npz'))
 
     def sample_indices(self, ratio: float) -> np.ndarray:
         """
@@ -57,15 +61,45 @@ class M4Dataset:
         indices = np.arange(len(self.info.ids), dtype=np.int32)
         return np.random.choice(indices, size=int(ratio * len(self.info.ids)), replace=False)
 
-    def next_batch(self, batch_size: int = 64) -> M4Batch:
+    def next_batch(self, batch_size: int = 64, indices_filter: Optional[np.ndarray] = None) -> M4Batch:
         """
         Sample a batch from the dataset.
 
         :param batch_size: Number of timeseries in the batch.
+        :param indices_filter:
         :return: Batch dictionary
         """
-        # TODO: implement next_batch
-        return M4Batch(horizon=0)
+        horizon_fractions = dict(self.info.data.Horizon.value_counts() / self.info.total_number_of_timeseries)
+        sampled_horizon = np.int32(np.random.choice(list(horizon_fractions.keys()), 1,
+                                                    p=list(horizon_fractions.values()))[0])
+        timeseries_with_same_horizon = np.arange(self.info.total_number_of_timeseries)[
+            self.info.data.Horizon == sampled_horizon]
+
+        if indices_filter is None:
+            indices_filter = np.arange(self.info.total_number_of_timeseries)
+
+        indices_subset = list(set(indices_filter).intersection(set(timeseries_with_same_horizon)))
+
+        batch_input = np.zeros(shape=(batch_size, M4_INPUT_MAXSIZE), dtype=np.float32)
+        batch_target = np.zeros(shape=(batch_size, sampled_horizon), dtype=np.float32)
+        batch_target_mask = np.zeros(shape=(batch_size, sampled_horizon), dtype=np.float32)
+        history_limit = M4_SAMPLING_WINDOW_LIMIT[sampled_horizon]
+        sampled_indices = np.random.choice(indices_subset, size=batch_size, replace=True)
+        for i, ts_index in enumerate(sampled_indices):
+            ts = self.data[ts_index]
+            sampling_limit = max(1, len(ts) - int(history_limit * sampled_horizon))
+            sampled_point = random.randint(sampling_limit, len(ts) - 1)
+            ts_input = np.flip(ts[max(0, sampled_point - M4_INPUT_MAXSIZE):sampled_point])
+            ts_target = ts[sampled_point:min(sampled_point + sampled_horizon, len(ts))]
+            batch_input[i, :len(ts_input)] = ts_input
+            batch_target[i, :len(ts_target)] = ts_target
+            batch_target_mask[i, :len(ts_target)] = 1.0
+
+        return M4Batch(horizon=sampled_horizon,
+                       inputs=batch_input,
+                       targets=batch_target,
+                       target_mask=batch_target_mask,
+                       masep=self.masep[sampled_indices])
 
     def __get_cached_dataset(self, cache_file_path: str) -> np.ndarray:
         if not os.path.isfile(cache_file_path):
@@ -100,4 +134,12 @@ class M4Dataset:
                     values = row.values
                     timeseries_dict[m4id] = values[~np.isnan(values)][subset]
             np.array(list(timeseries_dict.values())).dump(cache_file_path)
+        return np.load(cache_file_path, allow_pickle=True)
+
+    def __get_cached_masep(self, cache_file_path: str) -> np.ndarray:
+        if not os.path.isfile(cache_file_path):
+            masep = np.zeros((len(self.data),), dtype=np.float32)
+            for i, ts in enumerate(tqdm(self.data)):
+                masep[i] = get_masep(insample=ts, freq=self.info.data.Frequency.values[i])
+            masep.dump(cache_file_path)
         return np.load(cache_file_path, allow_pickle=True)

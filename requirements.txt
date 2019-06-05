@@ -12,5 +12,5 @@ scipy
 sklearn
 statsmodels
 stldecompose
-tensorflow-gpu==1.13.1
+tensorflow==1.13.1
 tqdm

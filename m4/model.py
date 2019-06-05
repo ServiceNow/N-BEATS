@@ -33,7 +33,7 @@ def train(experiment_path: str):
 
         # TODO: check loop inversion
         with tf.variable_scope('inputs'):
-            inputs = tf.placeholder(shape=(batch_size, 1, M4_INPUT_MAXSIZE),
+            inputs = tf.placeholder(shape=(batch_size, M4_INPUT_MAXSIZE),
                                     name='inputs',
                                     dtype=tf.float32)
             masep = tf.placeholder(shape=(batch_size,),
@@ -44,25 +44,26 @@ def train(experiment_path: str):
                                                   name=f'target_{horizon}',
                                                   dtype=tf.float32)
                 target_masks[horizon] = tf.placeholder(shape=(batch_size, horizon),
-                                                       name='targets_mask_{h}',
+                                                       name=f'targets_mask_{horizon}',
                                                        dtype=tf.float32)
 
         models = {}
         with tf.variable_scope('M4-model'):
             for horizon in m4_info.horizons:
-                with tf.variable_scope(f'horizon_{horizon}', reuse=False):
+                with tf.variable_scope(f'horizon_{horizon}', reuse=tf.AUTO_REUSE):
                     input_size = min(experiment.parameters.input_size * horizon, M4_INPUT_MAXSIZE)
-                    model_input = inputs[:, input_size]
+                    model_input = inputs[:, :input_size]
 
                     # delevel input of Hourly and Weekly
                     # TODO: fix UGLY mask issue
-                    mask = tf.not_equal(model_input, tf.zeros_like(model_input))
-                    model_input = model_input - model_input[:, :1] - 0.01
-                    model_input = tf.multiply(model_input, tf.cast(mask, model_input.dtype))
+                    # mask = tf.not_equal(model_input, tf.zeros_like(model_input))
+                    # model_input = model_input - model_input[:, :1] - 0.01
+                    # model_input = tf.multiply(model_input, tf.cast(mask, model_input.dtype))
 
                     model_input = tf.multiply(model_input, experiment.input_mask[None, :input_size],
-                                              name='features_subset')
-                    model = interpretable_basis(trend_blocks=experiment.parameters.trend_blocks,
+                                              name='model_input')
+                    model = interpretable_basis(input_size=input_size,
+                                                trend_blocks=experiment.parameters.trend_blocks,
                                                 trend_block_fc_size=experiment.parameters.trend_block_fc_size,
                                                 trend_block_fc_layers=experiment.parameters.trend_block_fc_layers,
                                                 trend_order=experiment.parameters.trend_order,
@@ -73,7 +74,8 @@ def train(experiment_path: str):
                                                 forecast_horizon=horizon,
                                                 weight_decay=experiment.parameters.weight_decay) \
                         if experiment.parameters.model_type == 'interpretable' \
-                        else generic_basis(stacks=experiment.parameters.stacks,
+                        else generic_basis(input_size=input_size,
+                                           stacks=experiment.parameters.stacks,
                                            blocks_in_stack=experiment.parameters.blocks_in_stack,
                                            block_fc_size=experiment.parameters.block_fc_size,
                                            block_fc_layers=experiment.parameters.block_fc_layers,
@@ -145,7 +147,7 @@ def train(experiment_path: str):
             train_log_results = dict()
             for step in range(checkpoint_step, experiment.parameters.iterations):
                 with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-                    batch = training_set.next_batch(batch_size=batch_size)
+                    batch = training_set.next_batch(batch_size=batch_size, indices_filter=experiment.timeseries_indices)
                     feed_dict = {
                         targets[batch.horizon]: batch.targets,
                         inputs: batch.inputs,
@@ -157,6 +159,7 @@ def train(experiment_path: str):
 
                     if step % experiment.parameters.training_checkpoint_interval == 0:
                         train_log_writer(step, **train_log_results)
+                        print(f'step {step}, loss: {batch_loss}')
                         logging.info(f'step {step}, loss: {batch_loss}')
                         summary_str = sess.run(summary, feed_dict=feed_dict)
                         summary_writer.add_summary(summary_str, step)
@@ -165,14 +168,16 @@ def train(experiment_path: str):
                     # TODO: validation
 
 
-def generic_basis(stacks: int,
+def generic_basis(input_size: int,
+                  stacks: int,
                   blocks_in_stack: int,
                   block_fc_size: int,
                   block_fc_layers: int,
                   forecast_horizon: int,
                   weight_decay: float,
                   activation_fn=tf.nn.relu):
-    return NBeats([NBeatsStack([NBeatsBlock(hidden_units=block_fc_size,
+    return NBeats([NBeatsStack([NBeatsBlock(input_size=input_size,
+                                            hidden_units=block_fc_size,
                                             layers=block_fc_layers,
                                             forecast_horizon=forecast_horizon,
                                             activation_fn=activation_fn,
@@ -181,7 +186,8 @@ def generic_basis(stacks: int,
                    for _ in range(stacks)])
 
 
-def interpretable_basis(trend_blocks: int,
+def interpretable_basis(input_size: int,
+                        trend_blocks: int,
                         trend_block_fc_size: int,
                         trend_block_fc_layers: int,
                         trend_order: int,
@@ -192,7 +198,8 @@ def interpretable_basis(trend_blocks: int,
                         forecast_horizon: int,
                         weight_decay: float,
                         activation_fn=tf.nn.relu):
-    trend_stack = NBeatsStack([NBeatsPolynomialBlock(hidden_units=trend_block_fc_size,
+    trend_stack = NBeatsStack([NBeatsPolynomialBlock(input_size=input_size,
+                                                     hidden_units=trend_block_fc_size,
                                                      layers=trend_block_fc_layers,
                                                      polynomial_order=trend_order,
                                                      forecast_horizon=forecast_horizon,
@@ -200,7 +207,8 @@ def interpretable_basis(trend_blocks: int,
                                                      regularizer=tf.contrib.layers.l2_regularizer(
                                                          scale=weight_decay))
                                for _ in range(trend_blocks)])
-    seasonality_stack = NBeatsStack([NBeatsHarmonicsBlock(hidden_units=seasonality_block_fc_size,
+    seasonality_stack = NBeatsStack([NBeatsHarmonicsBlock(input_size=input_size,
+                                                          hidden_units=seasonality_block_fc_size,
                                                           layers=seasonality_block_fc_layers,
                                                           num_of_harmonics=seasonality_num_harmonics,
                                                           forecast_horizon=forecast_horizon,

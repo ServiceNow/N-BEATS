@@ -49,8 +49,9 @@ def download_url(url: str, target_directory: str) -> None:
     file_path = os.path.join(target_directory, file_name)
 
     def progress(count, block_size, total_size):
-        sys.stdout.write('\rDownloading {} {:.1f}%'.format(file_path,
-                                                           float(count * block_size) / float(total_size) * 100.0))
+        sys.stdout.write('\rDownloading {} {} {:.1f}%'.format(file_path,
+                                                              url,
+                                                              float(count * block_size) / float(total_size) * 100.0))
         sys.stdout.flush()
 
     if not os.path.isfile(file_path):
@@ -123,3 +124,12 @@ def build_experiment_name(parameters):
         else:
             args.append("%s=%s" % (name, value))
     return ';'.join(args)
+
+
+def get_masep(insample, freq):
+    y_hat_naive = []
+    for i in range(freq, len(insample)):
+        y_hat_naive.append(insample[(i - freq)])
+
+    masep = np.mean(abs(insample[freq:] - y_hat_naive))
+    return masep
