@@ -10,6 +10,8 @@ from urllib import request
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from tensorflow.python.framework import dtypes
+from tensorflow.python.ops import init_ops, random_ops
 
 from m4.settings import M4_INPUT_MAXSIZE
 
@@ -133,3 +135,37 @@ def get_masep(insample, freq):
 
     masep = np.mean(abs(insample[freq:] - y_hat_naive))
     return masep
+
+
+# TODO: either use as weights initializer or remove
+class ScaledVarianceRandomNormal(init_ops.Initializer):
+    """Initializer that generates tensors with a normal distribution scaled as per https://arxiv.org/pdf/1502.01852.pdf.
+    Args:
+      mean: a python scalar or a scalar tensor. Mean of the random values
+        to generate.
+      seed: A Python integer. Used to create random seeds. See
+        @{tf.set_random_seed}
+        for behavior.
+      dtype: The data type. Only floating point types are supported.
+    """
+
+    def __init__(self, mean=0.0, factor=1.0, seed=None, dtype=dtypes.float32):
+        self.mean = mean
+        self.factor = factor
+        self.seed = seed
+        self.dtype = dtypes.as_dtype(dtype)
+
+    def __call__(self, shape, dtype=None, partition_info=None):
+        if dtype is None:
+            dtype = self.dtype
+
+        if shape:
+            n = float(shape[-1])
+        else:
+            n = 1.0
+        for dim in shape[:-2]:
+            n *= float(dim)
+
+        self.stddev = np.sqrt(self.factor * 2.0 / n)
+        return random_ops.random_normal(shape, self.mean, self.stddev,
+                                        dtype, seed=self.seed)

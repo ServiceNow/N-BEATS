@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from m4.dataset import M4Dataset, M4DatasetSplit
 from m4.experiment import ExperimentParameters, M4Experiment
-from m4.model import train
+from m4.model import train, predict
 from m4.settings import M4_EXPERIMENTS_DIR
 from m4.utils import build_experiment_name, params_cartesian_product, build_input_mask
 
@@ -26,7 +26,7 @@ training_parameters = {
     'weight_decay': 0.0,
     'iterations': 30001,
 
-    'training_checkpoint_interval': 10,
+    'training_checkpoint_interval': 1000,
 
     # model architecture
     'model_type': 'generic',  # or 'interpretable'
@@ -74,13 +74,10 @@ def init_experiment(name: str = ''):
             persist(os.path.join(experiments_dir_path, build_experiment_name(parameters_instance)))
 
 
-def train_model(experiment_rel_path: str):
-    train(os.path.join(M4_EXPERIMENTS_DIR, experiment_rel_path))
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('cmd', metavar='CMD', type=str, choices=['load_training_dataset', 'init_experiment', 'train'],
+    parser.add_argument('cmd', metavar='CMD', type=str, choices=['load_training_dataset',
+                                                                 'init_experiment', 'train', 'predict'],
                         help='Command to execute')
     parser.add_argument('--name', type=str, default='', help='Experiment name')
 
@@ -91,4 +88,7 @@ if __name__ == '__main__':
     elif args.cmd == 'init_experiment':
         init_experiment(args.name)
     elif args.cmd == 'train':
-        train_model(args.name)
+        train(os.path.join(M4_EXPERIMENTS_DIR, args.name))
+        predict(os.path.join(M4_EXPERIMENTS_DIR, args.name))
+    elif args.cmd == 'predict':
+        predict(os.path.join(M4_EXPERIMENTS_DIR, args.name))

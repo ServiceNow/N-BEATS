@@ -61,7 +61,7 @@ class M4Dataset:
         indices = np.arange(len(self.info.ids), dtype=np.int32)
         return np.random.choice(indices, size=int(ratio * len(self.info.ids)), replace=False)
 
-    def next_batch(self, batch_size: int = 64, indices_filter: Optional[np.ndarray] = None) -> M4Batch:
+    def sample_batch(self, batch_size: int = 64, indices_filter: Optional[np.ndarray] = None) -> M4Batch:
         """
         Sample a batch from the dataset.
 
@@ -100,6 +100,19 @@ class M4Dataset:
                        targets=batch_target,
                        target_mask=batch_target_mask,
                        masep=self.masep[sampled_indices])
+
+    def sequential_input_batches(self, batch_size, horizon: int):
+        indices = np.arange(self.info.total_number_of_timeseries, dtype=np.int32)
+        indices_for_horizon = indices[self.info.data.Horizon == horizon]
+        num_batches = int(np.ceil(len(indices_for_horizon) / batch_size))
+        for i in range(num_batches):
+            batch_indices = indices_for_horizon[i * batch_size: (i + 1) * batch_size]
+            batch_timeseries = [self.data[j] for j in batch_indices]
+            inputs = np.zeros(shape=(len(batch_timeseries), M4_INPUT_MAXSIZE), dtype=np.float32)
+            for ts_index, ts in enumerate(batch_timeseries):
+                ts_last_window = np.flip(ts[max(0, len(ts) - M4_INPUT_MAXSIZE):])
+                inputs[ts_index, :len(ts_last_window)] = ts_last_window
+            yield inputs
 
     def __get_cached_dataset(self, cache_file_path: str) -> np.ndarray:
         if not os.path.isfile(cache_file_path):
