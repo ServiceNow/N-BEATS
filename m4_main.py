@@ -1,7 +1,5 @@
 import argparse
-import logging
 import os
-import sys
 import time
 
 from tqdm import tqdm
@@ -91,8 +89,6 @@ if __name__ == '__main__':
         init_experiment(args.name)
     elif args.cmd == 'train':
         experiment_path = os.path.join(M4_EXPERIMENTS_DIR, args.name)
-        logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                            filename=os.path.join(experiment_path, 'experiment.log'), filemode='w')
         train(experiment_path)
         predict(experiment_path)
     elif args.cmd == 'predict':
