@@ -12,6 +12,8 @@ from m4.settings import M4_INPUT_MAXSIZE
 from m4.utils import summary_log, ScaledVarianceRandomNormal
 from nbeats import NBeats, NBeatsStack, NBeatsBlock, NBeatsHarmonicsBlock, NBeatsPolynomialBlock
 
+tf.logging.set_verbosity(tf.logging.WARN)
+
 
 def model_graph(input_placeholder, experiment: M4Experiment, horizons: Iterable, is_training: bool) -> Dict:
     models = {}
