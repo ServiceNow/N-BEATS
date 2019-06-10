@@ -191,7 +191,7 @@ def train(experiment_path: str):
 
                     if step % experiment.parameters.training_checkpoint_interval == 0:
                         train_log_writer(step, **train_log_results)
-                        print(f'step {step}, loss: {batch_loss}')
+                        # print(f'step {step}, loss: {batch_loss}', flush=True)
                         # TODO: figure out why logging does not work
                         logging.info(f'step {step}, loss: {batch_loss}')
                         summary_str = sess.run(summary, feed_dict=feed_dict)
