@@ -16,7 +16,7 @@ def build_and_push():
 def submit_to_borgy(experiments_dir_name):
     borgy_args = [
         "--image=%s" % image_name,
-        "-v", "%s:/project" % os.path.basename(os.path.abspath(os.path.join(__file__, os.pardir, os.pardir))),
+        "-v", "%s:/project" % project_directory,
         "-w", "/project/sources",
         "-e", "PYTHONPATH=/project/sources",
         "--cpu=1",
@@ -32,7 +32,9 @@ def submit_to_borgy(experiments_dir_name):
         print('Experiment %d: %s' % (i, experiment))
         command = 'python m4_main.py train --name %s/%s >> %s/experiment.log 2>&1' % (
             experiments_dir_name, experiment, experiment_path)
-        Popen(borgy_args + ['--', 'bash', '-c', command]).wait()
+        Popen(
+            ['borgy', 'submit', '--name=%s/%s' % (experiments_dir_name, experiment)] + borgy_args + ['--', 'bash', '-c',
+                                                                                                     command]).wait()
 
 
 if __name__ == '__main__':
