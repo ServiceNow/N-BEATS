@@ -125,7 +125,7 @@ def build_experiment_name(parameters):
             args.append("%s=%.4g" % (name, value))
         else:
             args.append("%s=%s" % (name, value))
-    return ';'.join(args)
+    return ','.join(args)
 
 
 def get_masep(insample, freq):
