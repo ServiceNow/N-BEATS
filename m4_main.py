@@ -92,7 +92,7 @@ if __name__ == '__main__':
     elif args.cmd == 'train':
         experiment_path = os.path.join(M4_EXPERIMENTS_DIR, args.name)
         log_path = os.path.join(experiment_path, 'experiment.log')
-        tf.logging.log(msg=f'redirect logging to {log_path}')
+        tf.logging.log(level=logging.INFO, msg=f'redirect logging to {log_path}')
         logging.basicConfig(filename=log_path, filemode='w')
         train(experiment_path)
         predict(experiment_path)
