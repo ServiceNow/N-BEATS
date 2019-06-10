@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import time
 
@@ -26,7 +27,7 @@ training_parameters = {
     'weight_decay': 0.0,
     'iterations': 30001,
 
-    'training_checkpoint_interval': 1000,
+    'training_checkpoint_interval': 10,
 
     # model architecture
     'model_type': 'generic',  # or 'interpretable'
@@ -88,7 +89,9 @@ if __name__ == '__main__':
     elif args.cmd == 'init_experiment':
         init_experiment(args.name)
     elif args.cmd == 'train':
-        train(os.path.join(M4_EXPERIMENTS_DIR, args.name))
-        predict(os.path.join(M4_EXPERIMENTS_DIR, args.name))
+        experiment_path = os.path.join(M4_EXPERIMENTS_DIR, args.name)
+        logging.basicConfig(filename=os.path.join(experiment_path, 'experiment.log'), filemode='w')
+        train(experiment_path)
+        predict(experiment_path)
     elif args.cmd == 'predict':
         predict(os.path.join(M4_EXPERIMENTS_DIR, args.name))
