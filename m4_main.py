@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import time
+import tensorflow as tf
 
 from tqdm import tqdm
 
@@ -90,6 +91,9 @@ if __name__ == '__main__':
         init_experiment(args.name)
     elif args.cmd == 'train':
         experiment_path = os.path.join(M4_EXPERIMENTS_DIR, args.name)
+        log_path = os.path.join(experiment_path, 'experiment.log')
+        tf.logging.log(msg=f'redirect logging to {log_path}')
+        logging.basicConfig(filename=log_path, filemode='w')
         train(experiment_path)
         predict(experiment_path)
     elif args.cmd == 'predict':
