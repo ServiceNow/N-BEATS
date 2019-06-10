@@ -193,7 +193,7 @@ def train(experiment_path: str):
                         train_log_writer(step, **train_log_results)
                         print(f'step {step}, loss: {batch_loss}', flush=True)
                         # TODO: figure out why logging does not work
-                        tf.logging.info(msg=f'step {step}, loss: {batch_loss}')
+                        tf.logging.info(msg=f'==== step {step}, loss: {batch_loss}')
                         summary_str = sess.run(summary, feed_dict=feed_dict)
                         summary_writer.add_summary(summary_str, step)
                         summary_writer.flush()
