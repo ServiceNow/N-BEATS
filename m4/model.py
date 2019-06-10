@@ -83,6 +83,7 @@ def model_log_path(experiment_path: str):
 
 
 def train(experiment_path: str):
+    logging.getLogger('tensorflow').addHandler(logging.getLogger(os.path.join(experiment_path, 'experiment.log')))
     experiment = M4Experiment.load(experiment_path)
 
     training_set = M4Dataset(split=M4DatasetSplit[experiment.parameters.training_split.upper()])
@@ -201,6 +202,7 @@ def train(experiment_path: str):
 
 
 def predict(experiment_path: str):
+    logging.getLogger('tensorflow').addHandler(logging.getLogger(os.path.join(experiment_path, 'experiment.log')))
     experiment = M4Experiment.load(experiment_path)
     training_set = M4Dataset(split=M4DatasetSplit[experiment.parameters.training_split.upper()])
 
