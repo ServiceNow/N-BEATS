@@ -8,6 +8,7 @@ from m4.dataset import M4Dataset, M4DatasetSplit
 from m4.experiment import ExperimentParameters, M4Experiment
 from m4.model import train, predict
 from m4.settings import M4_EXPERIMENTS_DIR
+from m4.ensemble import experiment_ensemble
 from m4.utils import build_experiment_name, params_cartesian_product, build_input_mask
 
 training_parameters = {
@@ -77,7 +78,7 @@ def init_experiment(name: str = ''):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('cmd', metavar='CMD', type=str, choices=['load_training_dataset',
-                                                                 'init_experiment', 'train', 'predict'],
+                                                                 'init_experiment', 'train', 'summary'],
                         help='Command to execute')
     parser.add_argument('--name', type=str, default='', help='Experiment name')
 
@@ -91,5 +92,5 @@ if __name__ == '__main__':
         experiment_path = os.path.join(M4_EXPERIMENTS_DIR, args.name)
         train(experiment_path)
         predict(experiment_path)
-    elif args.cmd == 'predict':
-        predict(os.path.join(M4_EXPERIMENTS_DIR, args.name))
+    elif args.cmd == 'summary':
+        experiment_ensemble(experiment_dir=os.path.join(M4_EXPERIMENTS_DIR, args.name), overwrite=True)

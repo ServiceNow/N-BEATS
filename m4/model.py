@@ -7,7 +7,7 @@ from tensorflow.contrib import slim
 
 from m4.dataset import M4Dataset, M4DatasetSplit
 from m4.experiment import M4Experiment
-from m4.settings import M4_INPUT_MAXSIZE
+from m4.settings import M4_INPUT_MAXSIZE, M4_PREDICTION_FILE_NAME
 from m4.utils import summary_log, ScaledVarianceRandomNormal
 from nbeats import NBeats, NBeatsStack, NBeatsBlock, NBeatsHarmonicsBlock, NBeatsPolynomialBlock
 
@@ -225,4 +225,4 @@ def predict(experiment_path: str):
         forecasts_df.columns = [f'F{i}' for i in range(1, len(forecasts_df.columns) + 1)]
         forecasts_df.index = training_set.info.ids
         forecasts_df.index.name = 'id'
-        forecasts_df.to_csv(os.path.join(experiment_path, 'predictions.csv'))
+        forecasts_df.to_csv(os.path.join(experiment_path, M4_PREDICTION_FILE_NAME))
