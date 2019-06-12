@@ -36,19 +36,19 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
 
     # summary
     smape_summary = weighted_average(model_smape, training_set.info)
-    smape_summary.set_index(['sMAPE'], inplace=True)
+    smape_summary.index = ['sMAPE']
     owa_summary = weighted_average(owa(model_mase, model_smape, naive2_mase, naive2_smape))
-    owa_summary.set_index(['OWA'], inplace=True)
+    owa_summary.index = ['OWA']
 
     return pd.concat([smape_summary, owa_summary])
 
 
-def mase(prediction: np.ndarray, target: np.ndarray, masep: np.ndarray):
-    return [np.mean(ts) for ts in np.abs(prediction - target) / masep]
+def mase(prediction: np.ndarray, target: np.ndarray, masep: np.ndarray) -> np.ndarray:
+    return np.array([np.mean(ts) for ts in np.abs(prediction - target) / masep])
 
 
-def smape(prediction: np.ndarray, target: np.ndarray):
-    return [np.mean(ts) for ts in (200 * np.abs(prediction - target) / (np.abs(target) + np.abs(prediction)))]
+def smape(prediction: np.ndarray, target: np.ndarray) -> np.ndarray:
+    return np.array([np.mean(ts) for ts in (200 * np.abs(prediction - target) / (np.abs(target) + np.abs(prediction)))])
 
 
 def owa(model_mase: np.ndarray, model_smape: np.ndarray, naive2_mase: np.ndarray, naive2_smape: np.ndarray):
