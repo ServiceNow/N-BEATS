@@ -20,7 +20,7 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
     naive2_csv_path = os.path.join(M4_DATA_DIR, 'submission-Naive2.csv')
     if not os.path.isfile(naive2_csv_path):
         naive2_package_path = os.path.join(M4_DATA_DIR, url_file_name(M4_NAIVE2_URL))
-        download_url(M4_NAIVE2_URL)
+        download_url(M4_NAIVE2_URL, target_directory=M4_DATA_DIR)
         patoolib.extract_archive(naive2_package_path, outdir=M4_DATA_DIR)
     naive2_prediction = csv_to_df(naive2_csv_path, id_column_index=0).values
 
