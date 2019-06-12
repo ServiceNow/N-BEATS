@@ -46,6 +46,7 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
 def mase(prediction: np.ndarray, target: np.ndarray, masep: np.ndarray):
     print(f'prediction: {prediction.shape}, target: {target.shape}, masep: {masep.shape}')
     print(f'abs: {(np.abs(prediction - target) / masep).shape}')
+    print(f'abs: {(np.abs(prediction - target) / masep).mean(axis=1).shape}')
     return (np.abs(prediction - target) / masep).mean()
 
 
