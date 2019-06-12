@@ -16,6 +16,7 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
     # load Model and Naive2 predictions
     #
     model_prediction = csv_to_df(prediction_csv_path, id_column_index=0).values
+    model_prediction = np.array([x[~np.isnan(x)] for x in model_prediction])
 
     naive2_csv_path = os.path.join(M4_DATA_DIR, 'submission-Naive2.csv')
     if not os.path.isfile(naive2_csv_path):
