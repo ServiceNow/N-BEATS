@@ -44,14 +44,11 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
 
 
 def mase(prediction: np.ndarray, target: np.ndarray, masep: np.ndarray):
-    print(f'prediction: {prediction.shape}, target: {target.shape}, masep: {masep.shape}')
-    print(f'abs: {(np.abs(prediction - target) / masep).shape}')
-    print(f'abs: {(np.abs(prediction - target) / masep).mean(axis=1).shape}')
-    return (np.abs(prediction - target) / masep).mean()
+    return [np.mean(ts) for ts in np.abs(prediction - target) / masep]
 
 
 def smape(prediction: np.ndarray, target: np.ndarray):
-    return (200 * np.abs(prediction - target) / (np.abs(target) + np.abs(prediction))).mean(axis=1)
+    return [np.mean(ts) for ts in (200 * np.abs(prediction - target) / (np.abs(target) + np.abs(prediction)))]
 
 
 def owa(model_mase: np.ndarray, model_smape: np.ndarray, naive2_mase: np.ndarray, naive2_smape: np.ndarray):
