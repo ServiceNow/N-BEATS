@@ -35,15 +35,27 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
     model_smape = smape(model_prediction, test_set.data)
 
     # summary
-    smape_summary = weighted_average(scores=model_smape,
-                                     m4_info=training_set.info,
-                                     index_name='sMAPE')
-    owa_summary = weighted_average(scores=owa(model_mase, model_smape, naive2_mase, naive2_smape),
-                                   m4_info=training_set.info,
-                                   index_name='OWA')
-    mase_summary = weighted_average(scores=naive2_mase, m4_info=training_set.info, index_name='MASE')
+    model_mase_summary = weighted_average(scores=model_mase,
+                                          m4_info=training_set.info,
+                                          index_name='MASE')
+    naive2_mase_summary = weighted_average(scores=naive2_mase,
+                                           m4_info=training_set.info,
+                                           index_name='MASE_naive2')
+    model_smape_summary = weighted_average(scores=model_smape,
+                                           m4_info=training_set.info,
+                                           index_name='sMAPE')
+    naive2_smape_summary = weighted_average(scores=naive2_smape,
+                                            m4_info=training_set.info,
+                                            index_name='sMAPE_naive2')
 
-    return pd.concat([smape_summary, owa_summary, mase_summary])
+    owa_score = owa(model_mase_summary.values,
+                    model_smape_summary.values,
+                    naive2_mase_summary.values,
+                    naive2_smape_summary.values)
+    owa_summary = pd.DataFrame(owa_score, columns=model_smape_summary.columns)
+    owa_summary.index = ['OWA']
+
+    return pd.concat([model_smape_summary, owa_summary])
 
 
 def mase(prediction: np.ndarray, target: np.ndarray, masep: np.ndarray) -> np.ndarray:
@@ -77,7 +89,8 @@ def weighted_average(scores: np.ndarray, m4_info: M4Info, index_name: str) -> pd
             weighted_avg_scores['Others'] += np.array(values).mean() * (len(values) / len_others)
 
     weighted_avg_scores['Average'] = (weighted_avg_scores['Yearly'] * len(m4_info.data[m4_info.data.SP == 'Yearly']) +
-                                      weighted_avg_scores['Quarterly'] * len(m4_info.data[m4_info.data.SP == 'Quarterly']) +
+                                      weighted_avg_scores['Quarterly'] * len(
+                m4_info.data[m4_info.data.SP == 'Quarterly']) +
                                       weighted_avg_scores['Monthly'] * len(m4_info.data[m4_info.data.SP == 'Monthly']) +
                                       weighted_avg_scores['Others'] * len_others) / len(m4_info.ids)
 
