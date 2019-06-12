@@ -70,8 +70,13 @@ def weighted_average(scores: np.ndarray, m4_info: M4Info, index_name: str) -> pd
         m4_info.data[(m4_info.data.SP == 'Weekly') | (m4_info.data.SP == 'Daily') | (m4_info.data.SP == 'Hourly')])
     for sp, values in grouped_scores.items():
         if sp == 'Yearly' or sp == 'Quarterly' or sp == 'Monthly':
-            weighted_avg_scores[sp] = (np.array(values).mean() * len(values)) / len(m4_info.ids)
+            weighted_avg_scores[sp] = np.array(values).mean()
         else:
-            weighted_avg_scores['Others'] += (np.array(values).mean() * (len(values) / len_others)) / len(m4_info.ids)
+            weighted_avg_scores['Others'] += np.array(values).mean() * (len(values) / len_others)
+
+    weighted_avg_scores['Average'] = (weighted_avg_scores['Yearly'] * len(m4_info.data[m4_info.data.SP == 'Yearly']) +
+                                      weighted_avg_scores['Quarterly'] * len(m4_info.data[m4_info.data.SP == 'Quarterly']) +
+                                      weighted_avg_scores['Monthly'] * len(m4_info.data[m4_info.data.SP == 'Monthly']) +
+                                      weighted_avg_scores['Others'] * len_others) / len(m4_info.ids)
 
     return pd.DataFrame(weighted_avg_scores, index=[index_name])
