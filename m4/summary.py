@@ -11,7 +11,6 @@ from m4.utils import csv_to_df, download_url, url_file_name
 
 
 def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Dataset):
-
     #
     # load Model and Naive2 predictions
     #
@@ -57,7 +56,7 @@ def owa(model_mase: np.ndarray, model_smape: np.ndarray, naive2_mase: np.ndarray
 
 
 def weighted_average(scores: np.ndarray, m4_info: M4Info) -> pd.DataFrame:
-    assert(len(scores) == len(m4_info.ids))
+    assert (len(scores) == len(m4_info.ids))
     seasonal_patterns = m4_info.data.SP.drop_duplicates().values
     grouped_scores = OrderedDict(list(zip(seasonal_patterns, [[]] * len(seasonal_patterns))))
 
@@ -65,7 +64,8 @@ def weighted_average(scores: np.ndarray, m4_info: M4Info) -> pd.DataFrame:
         grouped_scores[sp].append(scores[i])
 
     weighted_avg_scores = {'Others': 0.0}
-    len_others = len(m4_info[(m4_info.data.SP == 'Weekly') | (m4_info.data.SP == 'Daily') | (m4_info.data.SP == 'Hourly')])
+    len_others = len(
+        m4_info.data[(m4_info.data.SP == 'Weekly') | (m4_info.data.SP == 'Daily') | (m4_info.data.SP == 'Hourly')])
     for sp, values in grouped_scores.items():
         if sp == 'Yearly' or sp == 'Quarterly' or sp == 'Monthly':
             weighted_avg_scores[sp] = (np.array(values).mean() * len(values)) / len(m4_info.ids)
@@ -73,4 +73,3 @@ def weighted_average(scores: np.ndarray, m4_info: M4Info) -> pd.DataFrame:
             weighted_avg_scores['Others'] += (np.array(values).mean() * (len(values) / len_others)) / len(m4_info.ids)
 
     return pd.DataFrame(grouped_scores)
-
