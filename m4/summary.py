@@ -44,7 +44,7 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
 
 
 def mase(prediction: np.ndarray, target: np.ndarray, masep: np.ndarray):
-    return (np.abs(prediction - target) / masep).mean(axis=1)
+    return (np.abs(prediction - target) / masep).mean()
 
 
 def smape(prediction: np.ndarray, target: np.ndarray):
