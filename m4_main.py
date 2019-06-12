@@ -28,7 +28,7 @@ training_parameters = {
     'weight_decay': 0.0,
     'iterations': 30001,
 
-    'training_checkpoint_interval': 1000,
+    'training_checkpoint_interval': 3000,
 
     # model architecture
     'model_type': 'generic',  # or 'interpretable'

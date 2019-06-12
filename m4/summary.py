@@ -25,26 +25,16 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
     naive2_prediction = csv_to_df(naive2_csv_path, id_column_index=0).values
     naive2_prediction = np.array([x[~np.isnan(x)] for x in naive2_prediction])
 
-    #
-    # MASE and SMAPE of both Model and Naive2
-    #
-    naive2_mase = mase(naive2_prediction, test_set.data, training_set.masep)
-    naive2_smape = smape(naive2_prediction, test_set.data)
-
-    model_mase = mase(model_prediction, test_set.data, training_set.masep)
-    model_smape = smape(model_prediction, test_set.data)
-
-    # summary
-    model_mase_summary = weighted_average(scores=model_mase,
+    model_mase_summary = weighted_average(scores=mase(model_prediction, test_set.data, training_set.masep),
                                           m4_info=training_set.info,
                                           index_name='MASE')
-    naive2_mase_summary = weighted_average(scores=naive2_mase,
+    naive2_mase_summary = weighted_average(scores=mase(naive2_prediction, test_set.data, training_set.masep),
                                            m4_info=training_set.info,
                                            index_name='MASE_naive2')
-    model_smape_summary = weighted_average(scores=model_smape,
+    model_smape_summary = weighted_average(scores=smape(model_prediction, test_set.data),
                                            m4_info=training_set.info,
                                            index_name='sMAPE')
-    naive2_smape_summary = weighted_average(scores=naive2_smape,
+    naive2_smape_summary = weighted_average(scores=smape(naive2_prediction, test_set.data),
                                             m4_info=training_set.info,
                                             index_name='sMAPE_naive2')
 
