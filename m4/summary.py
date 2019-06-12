@@ -35,10 +35,8 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
     model_smape = smape(model_prediction, test_set.data)
 
     # summary
-    smape_summary = weighted_average(model_smape, training_set.info)
-    smape_summary.index = ['sMAPE']
-    owa_summary = weighted_average(owa(model_mase, model_smape, naive2_mase, naive2_smape))
-    owa_summary.index = ['OWA']
+    smape_summary = weighted_average(model_smape, training_set.info, index_name='sMAPE')
+    owa_summary = weighted_average(owa(model_mase, model_smape, naive2_mase, naive2_smape), index_name='OWA')
 
     return pd.concat([smape_summary, owa_summary])
 
@@ -55,7 +53,7 @@ def owa(model_mase: np.ndarray, model_smape: np.ndarray, naive2_mase: np.ndarray
     return (model_mase / naive2_mase + model_smape / naive2_smape) / 2
 
 
-def weighted_average(scores: np.ndarray, m4_info: M4Info) -> pd.DataFrame:
+def weighted_average(scores: np.ndarray, m4_info: M4Info, index_name: str) -> pd.DataFrame:
     assert (len(scores) == len(m4_info.ids))
     seasonal_patterns = m4_info.data.SP.drop_duplicates().values
     grouped_scores = OrderedDict(list(zip(seasonal_patterns, [[]] * len(seasonal_patterns))))
@@ -72,4 +70,4 @@ def weighted_average(scores: np.ndarray, m4_info: M4Info) -> pd.DataFrame:
         else:
             weighted_avg_scores['Others'] += (np.array(values).mean() * (len(values) / len_others)) / len(m4_info.ids)
 
-    return pd.DataFrame(weighted_avg_scores)
+    return pd.DataFrame(weighted_avg_scores, index=index_name)
