@@ -72,7 +72,7 @@ def init_experiment(name: str = ''):
         experiment_parameters = ExperimentParameters(**{**training_parameters, **parameters_instance})
         M4Experiment(parameters=experiment_parameters,
                      timeseries_indices=dataset.sample_indices(experiment_parameters.ts_per_model_ratio),
-                     input_mask=build_input_mask(experiment_parameters.input_dropout)).\
+                     input_mask=build_input_mask(experiment_parameters.input_dropout)). \
             persist(os.path.join(experiments_dir_path, build_experiment_name(parameters_instance)))
 
 
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         predict(experiment_path)
     elif args.cmd == 'summary':
         experiment_ensemble(experiment_dir=os.path.join(M4_EXPERIMENTS_DIR, args.name), overwrite=True)
-        summary(prediction_csv_path=os.path.join(M4_EXPERIMENTS_DIR, args.name, M4_PREDICTION_FILE_NAME),
-                training_set=M4Dataset(M4DatasetSplit.TRAIN),
-                test_set=M4Dataset(M4DatasetSplit.TEST))
-
+        result = summary(prediction_csv_path=os.path.join(M4_EXPERIMENTS_DIR, args.name, M4_PREDICTION_FILE_NAME),
+                         training_set=M4Dataset(M4DatasetSplit.TRAIN),
+                         test_set=M4Dataset(M4DatasetSplit.TEST))
+        print(result)
