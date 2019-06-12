@@ -5,10 +5,11 @@ import time
 from tqdm import tqdm
 
 from m4.dataset import M4Dataset, M4DatasetSplit
+from m4.ensemble import experiment_ensemble
 from m4.experiment import ExperimentParameters, M4Experiment
 from m4.model import train, predict
-from m4.settings import M4_EXPERIMENTS_DIR
-from m4.ensemble import experiment_ensemble
+from m4.settings import M4_EXPERIMENTS_DIR, M4_PREDICTION_FILE_NAME
+from m4.summary import summary
 from m4.utils import build_experiment_name, params_cartesian_product, build_input_mask
 
 training_parameters = {
@@ -94,3 +95,7 @@ if __name__ == '__main__':
         predict(experiment_path)
     elif args.cmd == 'summary':
         experiment_ensemble(experiment_dir=os.path.join(M4_EXPERIMENTS_DIR, args.name), overwrite=True)
+        summary(prediction_csv_path=os.path.join(M4_EXPERIMENTS_DIR, args.name, M4_PREDICTION_FILE_NAME),
+                training_set=M4Dataset(M4DatasetSplit.TRAIN),
+                test_set=M4Dataset(M4DatasetSplit.TEST))
+
