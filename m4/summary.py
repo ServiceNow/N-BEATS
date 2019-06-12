@@ -23,6 +23,7 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
         download_url(M4_NAIVE2_URL, target_directory=M4_DATA_DIR)
         patoolib.extract_archive(naive2_package_path, outdir=M4_DATA_DIR)
     naive2_prediction = csv_to_df(naive2_csv_path, id_column_index=0).values
+    naive2_prediction = naive2_prediction[~np.isnan(naive2_prediction)]
 
     #
     # MASE and SMAPE of both Model and Naive2
