@@ -94,8 +94,10 @@ if __name__ == '__main__':
         train(experiment_path)
         predict(experiment_path)
     elif args.cmd == 'summary':
-        experiment_ensemble(experiment_dir=os.path.join(M4_EXPERIMENTS_DIR, args.name), overwrite=True)
-        result = summary(prediction_csv_path=os.path.join(M4_EXPERIMENTS_DIR, args.name, M4_PREDICTION_FILE_NAME),
+        predictions_file_path = os.path.join(M4_EXPERIMENTS_DIR, args.name, M4_PREDICTION_FILE_NAME)
+        if not os.path.isfile(predictions_file_path):
+            experiment_ensemble(experiment_dir=os.path.join(M4_EXPERIMENTS_DIR, args.name), overwrite=False)
+        result = summary(prediction_csv_path=predictions_file_path,
                          training_set=M4Dataset(M4DatasetSplit.TRAIN),
                          test_set=M4Dataset(M4DatasetSplit.TEST))
         print(result)
