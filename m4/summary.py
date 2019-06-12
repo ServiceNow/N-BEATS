@@ -41,7 +41,7 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
     owa_summary = weighted_average(scores=owa(model_mase, model_smape, naive2_mase, naive2_smape),
                                    m4_info=training_set.info,
                                    index_name='OWA')
-    mase_summary = weighted_average(scores=model_mase, m4_info=training_set.info, index_name='MASE')
+    mase_summary = weighted_average(scores=naive2_mase, m4_info=training_set.info, index_name='MASE')
 
     return pd.concat([smape_summary, owa_summary, mase_summary])
 
