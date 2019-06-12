@@ -46,7 +46,7 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
 
 
 def mase(prediction: np.ndarray, target: np.ndarray, masep: np.ndarray) -> np.ndarray:
-    return np.array([np.mean(ts) for ts in np.abs(prediction - target) / masep])
+    return np.array([np.mean(ts) for ts in (np.abs(prediction - target) / masep)])
 
 
 def smape(prediction: np.ndarray, target: np.ndarray) -> np.ndarray:
@@ -65,7 +65,7 @@ def weighted_average(scores: np.ndarray, m4_info: M4Info, index_name: str) -> pd
     for i, sp in enumerate(m4_info.data.SP):
         grouped_scores[sp] = np.append(grouped_scores[sp], scores[i])
 
-    weighted_avg_scores = OrderedDict([('Yearly', None), ('Quarterly', None), ('Monthly', None), ('Others', 0.0),
+    weighted_avg_scores = OrderedDict([('Yearly', 0.0), ('Quarterly', 0.0), ('Monthly', 0.0), ('Others', 0.0),
                                        ('Average', 0.0)])
     len_others = len(
         m4_info.data[(m4_info.data.SP == 'Weekly') | (m4_info.data.SP == 'Daily') | (m4_info.data.SP == 'Hourly')])
