@@ -63,7 +63,7 @@ def weighted_average(scores: np.ndarray, m4_info: M4Info, index_name: str) -> pd
     grouped_scores = OrderedDict(list(zip(seasonal_patterns, [[]] * len(seasonal_patterns))))
 
     for i, sp in enumerate(m4_info.data.SP):
-        grouped_scores[sp].append(scores[i])
+        grouped_scores[sp].extend(scores[i])
 
     weighted_avg_scores = {'Others': 0.0}
     len_others = len(
