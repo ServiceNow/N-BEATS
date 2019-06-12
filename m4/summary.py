@@ -35,8 +35,12 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
     model_smape = smape(model_prediction, test_set.data)
 
     # summary
-    smape_summary = weighted_average(model_smape, training_set.info, index_name='sMAPE')
-    owa_summary = weighted_average(owa(model_mase, model_smape, naive2_mase, naive2_smape), index_name='OWA')
+    smape_summary = weighted_average(scores=model_smape,
+                                     m4_info=training_set.info,
+                                     index_name='sMAPE')
+    owa_summary = weighted_average(scores=owa(model_mase, model_smape, naive2_mase, naive2_smape),
+                                   m4_info=training_set.info,
+                                   index_name='OWA')
 
     return pd.concat([smape_summary, owa_summary])
 
