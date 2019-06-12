@@ -28,12 +28,14 @@ def model_graph(input_placeholder, experiment: M4Experiment, horizons: Iterable,
                 with tf.variable_scope(f'horizon_{horizon}', reuse=tf.AUTO_REUSE):
                     input_size = min(experiment.parameters.input_size * horizon, M4_INPUT_MAXSIZE)
                     model_input = input_placeholder[:, :input_size]
+                    apply_input_delevel = horizon == 13 or horizon == 48
 
                     # delevel input of Hourly and Weekly
                     # TODO: fix UGLY mask issue
-                    if horizon == 13 or horizon == 48:
+                    input_level = model_input[:, :1]
+                    if apply_input_delevel:
                         mask = tf.not_equal(model_input, tf.zeros_like(model_input))
-                        model_input = model_input - model_input[:, :1] - 0.01
+                        model_input = model_input - input_level - 0.01
                         model_input = tf.multiply(model_input, tf.cast(mask, model_input.dtype))
 
                     model_input = tf.multiply(model_input, experiment.input_mask[None, :input_size],
@@ -72,7 +74,10 @@ def model_graph(input_placeholder, experiment: M4Experiment, horizons: Iterable,
                     else:
                         raise Exception(f'Unknown model type {experiment.parameters.model_type}')
 
-                    models[horizon] = model.build(model_input)
+                    if apply_input_delevel:
+                        models[horizon] = model.build(model_input) + input_level
+                    else:
+                        models[horizon] = model.build(model_input)
     return models
 
 
