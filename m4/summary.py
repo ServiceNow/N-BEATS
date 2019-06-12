@@ -70,4 +70,4 @@ def weighted_average(scores: np.ndarray, m4_info: M4Info, index_name: str) -> pd
         else:
             weighted_avg_scores['Others'] += (np.array(values).mean() * (len(values) / len_others)) / len(m4_info.ids)
 
-    return pd.DataFrame(weighted_avg_scores, index=index_name)
+    return pd.DataFrame(weighted_avg_scores, index=[index_name])
