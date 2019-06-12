@@ -60,17 +60,13 @@ def owa(model_mase: np.ndarray, model_smape: np.ndarray, naive2_mase: np.ndarray
 def weighted_average(scores: np.ndarray, m4_info: M4Info, index_name: str) -> pd.DataFrame:
     assert (len(scores) == len(m4_info.ids))
     seasonal_patterns = m4_info.data.SP.drop_duplicates().values
-    grouped_scores = OrderedDict(list(zip(seasonal_patterns, [[]] * len(seasonal_patterns))))
+    grouped_scores = OrderedDict(list(zip(seasonal_patterns, [np.array([])] * len(seasonal_patterns))))
 
     for i, sp in enumerate(m4_info.data.SP):
-        grouped_scores[sp].append(scores[i])
+        grouped_scores[sp] = np.append(grouped_scores[sp], scores[i])
 
-    print(grouped_scores['Yearly'][0])
-    print(grouped_scores['Yearly'][1])
-    print(grouped_scores['Monthly'][0])
-    print(grouped_scores['Monthly'][1])
-
-    weighted_avg_scores = {'Others': 0.0}
+    weighted_avg_scores = OrderedDict([('Yearly', None), ('Quarterly', None), ('Monthly', None), ('Others', 0.0),
+                                       ('Average', 0.0)])
     len_others = len(
         m4_info.data[(m4_info.data.SP == 'Weekly') | (m4_info.data.SP == 'Daily') | (m4_info.data.SP == 'Hourly')])
     for sp, values in grouped_scores.items():
