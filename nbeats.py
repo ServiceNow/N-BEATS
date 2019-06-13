@@ -93,7 +93,7 @@ class NBeatsPolynomialBlock(NBeatsBlock):
             backcast += tf.pow(t_backcast, float(i)) * basis_output[:, self.polynomial_order + 1 + i, None]
         return backcast, forecast
 
-
+# TODO: rename
 class NBeatsHarmonicsBlock(NBeatsBlock):
     def __init__(self,
                  input_size: int,
@@ -131,7 +131,6 @@ class NBeatsHarmonicsBlock(NBeatsBlock):
         harmonics_sin = tf.matmul(harmonics_weights[:, num_basis_fns:2 * num_basis_fns], sin_template)
         forecast = harmonics_cos + harmonics_sin
         # Produce backcast seasonality synthesis, this signal will be used by the next analysis step
-        # TODO: clarify why /forecast_horizon and not /input_size
         t_backcast = -np.arange(self.input_size, dtype=np.float32)[:, None] / self.forecast_horizon
         cos_template_backcast = np.transpose(np.cos(2 * np.pi * t_backcast * freq))
         sin_template_backcast = np.transpose(np.sin(2 * np.pi * t_backcast * freq))
@@ -156,12 +155,12 @@ class NBeatsStack:
             residuals = inputs
             stack_forecast = []
             for block in self.blocks:
+                if input_mask is not None:
+                    residuals = tf.multiply(residuals, tf.cast(input_mask, residuals.dtype))
+
                 backcast, forecast = block.build(residuals)
                 residuals = residuals - backcast
                 stack_forecast.append(forecast)
-
-                if input_mask is not None:
-                    residuals = tf.multiply(residuals, tf.cast(input_mask, residuals.dtype))
         return residuals, tf.add_n(stack_forecast) if len(stack_forecast) > 0 else 0.0
 
 

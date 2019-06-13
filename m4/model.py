@@ -19,16 +19,15 @@ def model_graph(input_placeholder, input_mask_placeholder, experiment: M4Experim
             with tf.variable_scope(f'horizon_{horizon}', reuse=tf.AUTO_REUSE):
                 input_size = min(experiment.parameters.input_size * horizon, M4_INPUT_MAXSIZE)
                 model_input = input_placeholder[:, :input_size]
-                input_mask = input_mask_placeholder[:, :input_size]
+                input_mask = tf.multiply(input_mask_placeholder[:, :input_size],
+                                         experiment.input_dropout[None, :input_size])
+                # TODO: show benefit on validation
                 apply_input_delevel = horizon == 13 or horizon == 48
 
                 # delevel input of Hourly and Weekly
                 input_level = model_input[:, :1]
                 if apply_input_delevel:
                     model_input = model_input - input_level
-
-                model_input = tf.multiply(model_input, experiment.input_dropout[None, :input_size],
-                                          name='model_input')
 
                 if experiment.parameters.model_type == 'generic':
                     model = NBeats([NBeatsStack([NBeatsBlock(input_size=input_size,
@@ -128,6 +127,7 @@ def train(experiment_path: str):
                                                                     predictions=forecast,
                                                                     weights=weights)
                 elif loss_name == 'SMAPE':
+                    # stop gradient on denominator for numerical stability.
                     weights = tf.stop_gradient(tf.div_no_nan(2.0 * target_mask, (target + tf.abs(forecast))))
                     losses[horizon] = tf.reduce_mean(tf.abs(target - forecast) * weights)
                 else:
