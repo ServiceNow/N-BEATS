@@ -94,7 +94,7 @@ class M4Dataset:
             ts_input = np.flip(ts[max(0, sampled_point - M4_INPUT_MAXSIZE):sampled_point])
             ts_target = ts[sampled_point:min(sampled_point + sampled_horizon, len(ts))]
             batch_input[i, :len(ts_input)] = ts_input
-            batch_input_masks[i, :len(ts_index)] = 1.0
+            batch_input_masks[i, :len(ts_input)] = 1.0
             batch_target[i, :len(ts_target)] = ts_target
             batch_target_mask[i, :len(ts_target)] = 1.0
 
