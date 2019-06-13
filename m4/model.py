@@ -107,7 +107,7 @@ def train(experiment_path: str):
                                                        name=f'targets_mask_{horizon}',
                                                        dtype=tf.float32)
 
-        models = model_graph(inputs, experiment, training_set.info.horizons)
+        models = model_graph(inputs, input_masks, experiment, training_set.info.horizons)
 
         # Training operations
         training_operations = {}
@@ -205,7 +205,7 @@ def predict(experiment_path: str):
             input_masks = tf.placeholder(shape=(None, M4_INPUT_MAXSIZE),
                                          name='input_masks',
                                          dtype=tf.float32)
-        models = model_graph(inputs, experiment, training_set.info.horizons)
+        models = model_graph(inputs, input_masks, experiment, training_set.info.horizons)
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
 
