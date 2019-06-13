@@ -12,78 +12,77 @@ from m4.utils import summary_log, ScaledVarianceRandomNormal
 from nbeats import NBeats, NBeatsStack, NBeatsBlock, NBeatsHarmonicsBlock, NBeatsPolynomialBlock
 
 
-def model_graph(input_placeholder, experiment: M4Experiment, horizons: Iterable, is_training: bool) -> Dict:
+def model_graph(input_placeholder, experiment: M4Experiment, horizons: Iterable) -> Dict:
     models = {}
-    model_scope = slim.arg_scope(
-        [slim.conv2d],
-        activation_fn=None,
-        normalizer_fn=None,
-        trainable=is_training,
-        weights_regularizer=None,
-        weights_initializer=ScaledVarianceRandomNormal(factor=0.1),
-    )
-    with model_scope:
-        with tf.variable_scope('M4-model', reuse=tf.AUTO_REUSE):
-            for horizon in horizons:
-                with tf.variable_scope(f'horizon_{horizon}', reuse=tf.AUTO_REUSE):
-                    input_size = min(experiment.parameters.input_size * horizon, M4_INPUT_MAXSIZE)
-                    model_input = input_placeholder[:, :input_size]
-                    apply_input_delevel = horizon == 13 or horizon == 48
+    # model_scope = slim.arg_scope(
+    #     [slim.],
+    #     activation_fn=None,
+    #     normalizer_fn=None,
+    #     trainable=is_training,
+    #     weights_regularizer=None,
+    #     weights_initializer=ScaledVarianceRandomNormal(factor=0.1),
+    # )
+    # with model_scope:
+    with tf.variable_scope('M4-model', reuse=tf.AUTO_REUSE):
+        for horizon in horizons:
+            with tf.variable_scope(f'horizon_{horizon}', reuse=tf.AUTO_REUSE):
+                input_size = min(experiment.parameters.input_size * horizon, M4_INPUT_MAXSIZE)
+                model_input = input_placeholder[:, :input_size]
+                apply_input_delevel = horizon == 13 or horizon == 48
 
-                    # delevel input of Hourly and Weekly
-                    # TODO: fix UGLY mask issue
-                    input_level = model_input[:, :1]
-                    if apply_input_delevel:
-                        mask = tf.not_equal(model_input, tf.zeros_like(model_input))
-                        model_input = model_input - input_level - 0.01
-                        model_input = tf.multiply(model_input, tf.cast(mask, model_input.dtype))
+                # delevel input of Hourly and Weekly
+                # TODO: fix UGLY mask issue
+                input_level = model_input[:, :1]
+                if apply_input_delevel:
+                    mask = tf.not_equal(model_input, tf.zeros_like(model_input))
+                    model_input = model_input - input_level - 0.01
+                    model_input = tf.multiply(model_input, tf.cast(mask, model_input.dtype))
 
-                    model_input = tf.multiply(model_input, experiment.input_mask[None, :input_size],
-                                              name='model_input')
+                model_input = tf.multiply(model_input, experiment.input_mask[None, :input_size],
+                                          name='model_input')
 
-                    if experiment.parameters.model_type == 'generic':
-                        model = NBeats([NBeatsStack([NBeatsBlock(input_size=input_size,
-                                                                 hidden_units=experiment.parameters.block_fc_size,
-                                                                 layers=experiment.parameters.block_fc_layers,
-                                                                 forecast_horizon=horizon,
-                                                                 activation_fn=tf.nn.relu,
-                                                                 regularizer=tf.contrib.layers.l2_regularizer(
-                                                                     scale=experiment.parameters.weight_decay))
-                                                     for _ in range(experiment.parameters.blocks_in_stack)])
-                                        for _ in range(experiment.parameters.stacks)])
-                    elif experiment.parameters.model_type == 'interpretable':
-                        trend_stack = NBeatsStack([NBeatsPolynomialBlock(input_size=input_size,
-                                                                         hidden_units=experiment.parameters.trend_block_fc_size,
-                                                                         layers=experiment.parameters.trend_block_fc_layers,
-                                                                         polynomial_order=experiment.parameters.trend_order,
-                                                                         forecast_horizon=horizon,
-                                                                         activation_fn=tf.nn.relu,
-                                                                         regularizer=tf.contrib.layers.l2_regularizer(
-                                                                             scale=experiment.parameters.weight_decay))
-                                                   for _ in range(experiment.parameters.trend_blocks)])
-                        seasonality_stack = NBeatsStack([NBeatsHarmonicsBlock(input_size=input_size,
-                                                                              hidden_units=experiment.parameters.seasonality_block_fc_size,
-                                                                              layers=experiment.parameters.seasonality_block_fc_layers,
-                                                                              num_of_harmonics=experiment.parameters.seasonality_num_harmonics,
-                                                                              forecast_horizon=horizon,
-                                                                              activation_fn=tf.nn.relu,
-                                                                              regularizer=tf.contrib.layers.l2_regularizer(
-                                                                                  scale=experiment.parameters.weight_decay))
-                                                         for _ in range(experiment.parameters.seasonality_blocks)])
-                        model = NBeats([trend_stack, seasonality_stack])
-                    else:
-                        raise Exception(f'Unknown model type {experiment.parameters.model_type}')
+                if experiment.parameters.model_type == 'generic':
+                    model = NBeats([NBeatsStack([NBeatsBlock(input_size=input_size,
+                                                             hidden_units=experiment.parameters.block_fc_size,
+                                                             layers=experiment.parameters.block_fc_layers,
+                                                             forecast_horizon=horizon,
+                                                             activation_fn=tf.nn.relu,
+                                                             regularizer=tf.contrib.layers.l2_regularizer(
+                                                                 scale=experiment.parameters.weight_decay))
+                                                 for _ in range(experiment.parameters.blocks_in_stack)])
+                                    for _ in range(experiment.parameters.stacks)])
+                elif experiment.parameters.model_type == 'interpretable':
+                    trend_stack = NBeatsStack([NBeatsPolynomialBlock(input_size=input_size,
+                                                                     hidden_units=experiment.parameters.trend_block_fc_size,
+                                                                     layers=experiment.parameters.trend_block_fc_layers,
+                                                                     polynomial_order=experiment.parameters.trend_order,
+                                                                     forecast_horizon=horizon,
+                                                                     activation_fn=tf.nn.relu,
+                                                                     regularizer=tf.contrib.layers.l2_regularizer(
+                                                                         scale=experiment.parameters.weight_decay))
+                                               for _ in range(experiment.parameters.trend_blocks)])
+                    seasonality_stack = NBeatsStack([NBeatsHarmonicsBlock(input_size=input_size,
+                                                                          hidden_units=experiment.parameters.seasonality_block_fc_size,
+                                                                          layers=experiment.parameters.seasonality_block_fc_layers,
+                                                                          num_of_harmonics=experiment.parameters.seasonality_num_harmonics,
+                                                                          forecast_horizon=horizon,
+                                                                          activation_fn=tf.nn.relu,
+                                                                          regularizer=tf.contrib.layers.l2_regularizer(
+                                                                              scale=experiment.parameters.weight_decay))
+                                                     for _ in range(experiment.parameters.seasonality_blocks)])
+                    model = NBeats([trend_stack, seasonality_stack])
+                else:
+                    raise Exception(f'Unknown model type {experiment.parameters.model_type}')
 
-                    if apply_input_delevel:
-                        models[horizon] = model.build(model_input) + input_level
-                    else:
-                        models[horizon] = model.build(model_input)
+                if apply_input_delevel:
+                    models[horizon] = model.build(model_input) + input_level
+                else:
+                    models[horizon] = model.build(model_input)
     return models
 
 
-def model_log_path(experiment_path: str):
-    # TODO: rename
-    return os.path.join(experiment_path, 'logs')
+def checkpoints_path(experiment_path: str):
+    return os.path.join(experiment_path, 'checkpoints')
 
 
 def train(experiment_path: str):
@@ -117,7 +116,7 @@ def train(experiment_path: str):
                                                        name=f'targets_mask_{horizon}',
                                                        dtype=tf.float32)
 
-        models = model_graph(inputs, experiment, training_set.info.horizons, is_training=True)
+        models = model_graph(inputs, experiment, training_set.info.horizons)
 
         # Training operations
         training_operations = {}
@@ -161,9 +160,9 @@ def train(experiment_path: str):
         tf.summary.scalar('learning_rate', learning_rate)
         summary = tf.summary.merge(tf.get_collection('summaries'))
         summary_writer = tf.summary.FileWriter(experiment_path, flush_secs=1)
-        train_log_writer = summary_log(model_log_path(experiment_path), writer=summary_writer)
+        train_log_writer = summary_log(checkpoints_path(experiment_path), writer=summary_writer)
         saver = tf.train.Saver(max_to_keep=1, save_relative_paths=True)
-        supervisor = tf.train.Supervisor(logdir=model_log_path(experiment_path),
+        supervisor = tf.train.Supervisor(logdir=checkpoints_path(experiment_path),
                                          init_feed_dict=None,
                                          summary_op=None,
                                          init_op=tf.global_variables_initializer(),
@@ -200,7 +199,7 @@ def train(experiment_path: str):
                         summary_str = sess.run(summary, feed_dict=feed_dict)
                         summary_writer.add_summary(summary_str, step)
                         summary_writer.flush()
-                        saver.save(sess, os.path.join(model_log_path(experiment_path), 'model'), global_step=step)
+                        saver.save(sess, os.path.join(checkpoints_path(experiment_path), 'model'), global_step=step)
 
 
 def predict(experiment_path: str):
@@ -212,13 +211,13 @@ def predict(experiment_path: str):
             inputs = tf.placeholder(shape=(None, M4_INPUT_MAXSIZE),
                                     name='inputs',
                                     dtype=tf.float32)
-        models = model_graph(inputs, experiment, training_set.info.horizons, is_training=False)
+        models = model_graph(inputs, experiment, training_set.info.horizons)
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
 
         session = tf.Session(config=config)
         saver = tf.train.Saver()
-        latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir=model_log_path(experiment_path))
+        latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir=checkpoints_path(experiment_path))
         saver.restore(session, latest_checkpoint)
 
         forecasts = []

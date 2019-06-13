@@ -48,7 +48,7 @@ class M4Dataset:
         self.split = split
         self.info = M4Info(M4_DATA_DIR)
         self.data = self.__get_cached_dataset(os.path.join(M4_DATA_DIR, f'{self.split.value}_dataset.npz'))
-        # TODO: clarify that this is not really MASE for sampled data (although it plays a role of a scaler only).
+        # TODO: clarify that this is not really MASE for sampled data (although it plays a role of scaler only).
         self.masep = self.__get_cached_masep(os.path.join(M4_DATA_DIR, f'{self.split.value}_masep.npz'))
 
     def sample_indices(self, ratio: float) -> np.ndarray:
