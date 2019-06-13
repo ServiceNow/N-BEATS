@@ -19,6 +19,7 @@ def model_graph(input_placeholder, input_mask_placeholder, experiment: M4Experim
             with tf.variable_scope(f'horizon_{horizon}', reuse=tf.AUTO_REUSE):
                 input_size = min(experiment.parameters.input_size * horizon, M4_INPUT_MAXSIZE)
                 model_input = input_placeholder[:, :input_size]
+                input_mask = input_mask_placeholder[:, :input_size]
                 apply_input_delevel = horizon == 13 or horizon == 48
 
                 # delevel input of Hourly and Weekly
@@ -63,9 +64,9 @@ def model_graph(input_placeholder, input_mask_placeholder, experiment: M4Experim
                     raise Exception(f'Unknown model type {experiment.parameters.model_type}')
 
                 if apply_input_delevel:
-                    models[horizon] = model.build(model_input, input_mask=input_mask_placeholder) + input_level
+                    models[horizon] = model.build(model_input, input_mask=input_mask) + input_level
                 else:
-                    models[horizon] = model.build(model_input, input_mask=input_mask_placeholder)
+                    models[horizon] = model.build(model_input, input_mask=input_mask)
     return models
 
 
