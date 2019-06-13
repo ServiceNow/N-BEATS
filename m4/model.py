@@ -8,21 +8,12 @@ from tensorflow.contrib import slim
 from m4.dataset import M4Dataset, M4DatasetSplit
 from m4.experiment import M4Experiment
 from m4.settings import M4_INPUT_MAXSIZE, M4_PREDICTION_FILE_NAME
-from m4.utils import summary_log, ScaledVarianceRandomNormal
+from m4.utils import summary_log
 from nbeats import NBeats, NBeatsStack, NBeatsBlock, NBeatsHarmonicsBlock, NBeatsPolynomialBlock
 
 
-def model_graph(input_placeholder, experiment: M4Experiment, horizons: Iterable) -> Dict:
+def model_graph(input_placeholder, input_mask_placeholder, experiment: M4Experiment, horizons: Iterable) -> Dict:
     models = {}
-    # model_scope = slim.arg_scope(
-    #     [slim.],
-    #     activation_fn=None,
-    #     normalizer_fn=None,
-    #     trainable=is_training,
-    #     weights_regularizer=None,
-    #     weights_initializer=ScaledVarianceRandomNormal(factor=0.1),
-    # )
-    # with model_scope:
     with tf.variable_scope('M4-model', reuse=tf.AUTO_REUSE):
         for horizon in horizons:
             with tf.variable_scope(f'horizon_{horizon}', reuse=tf.AUTO_REUSE):
@@ -31,14 +22,11 @@ def model_graph(input_placeholder, experiment: M4Experiment, horizons: Iterable)
                 apply_input_delevel = horizon == 13 or horizon == 48
 
                 # delevel input of Hourly and Weekly
-                # TODO: fix UGLY mask issue
                 input_level = model_input[:, :1]
                 if apply_input_delevel:
-                    mask = tf.not_equal(model_input, tf.zeros_like(model_input))
-                    model_input = model_input - input_level - 0.01
-                    model_input = tf.multiply(model_input, tf.cast(mask, model_input.dtype))
+                    model_input = model_input - input_level
 
-                model_input = tf.multiply(model_input, experiment.input_mask[None, :input_size],
+                model_input = tf.multiply(model_input, experiment.input_dropout[None, :input_size],
                                           name='model_input')
 
                 if experiment.parameters.model_type == 'generic':
@@ -75,9 +63,9 @@ def model_graph(input_placeholder, experiment: M4Experiment, horizons: Iterable)
                     raise Exception(f'Unknown model type {experiment.parameters.model_type}')
 
                 if apply_input_delevel:
-                    models[horizon] = model.build(model_input) + input_level
+                    models[horizon] = model.build(model_input, input_mask=input_mask_placeholder) + input_level
                 else:
-                    models[horizon] = model.build(model_input)
+                    models[horizon] = model.build(model_input, input_mask=input_mask_placeholder)
     return models
 
 
@@ -105,6 +93,9 @@ def train(experiment_path: str):
             inputs = tf.placeholder(shape=(batch_size, M4_INPUT_MAXSIZE),
                                     name='inputs',
                                     dtype=tf.float32)
+            input_masks = tf.placeholder(shape=(batch_size, M4_INPUT_MAXSIZE),
+                                         name='input_masks',
+                                         dtype=tf.float32)
             masep = tf.placeholder(shape=(batch_size,),
                                    name='masep',
                                    dtype=tf.float32)
@@ -184,8 +175,9 @@ def train(experiment_path: str):
                     batch = training_set.sample_batch(batch_size=batch_size,
                                                       indices_filter=experiment.timeseries_indices)
                     feed_dict = {
-                        targets[batch.horizon]: batch.targets,
                         inputs: batch.inputs,
+                        input_masks: batch.input_masks,
+                        targets[batch.horizon]: batch.targets,
                         target_masks[batch.horizon]: batch.target_mask,
                         masep: batch.masep
                     }
@@ -195,7 +187,6 @@ def train(experiment_path: str):
                     if step % experiment.parameters.training_checkpoint_interval == 0:
                         train_log_writer(step, **train_log_results)
                         print(f'step {step}, loss: {batch_loss}', flush=True)
-                        # TODO: figure out why logging does not work
                         summary_str = sess.run(summary, feed_dict=feed_dict)
                         summary_writer.add_summary(summary_str, step)
                         summary_writer.flush()
@@ -211,6 +202,9 @@ def predict(experiment_path: str):
             inputs = tf.placeholder(shape=(None, M4_INPUT_MAXSIZE),
                                     name='inputs',
                                     dtype=tf.float32)
+            input_masks = tf.placeholder(shape=(None, M4_INPUT_MAXSIZE),
+                                         name='input_masks',
+                                         dtype=tf.float32)
         models = model_graph(inputs, experiment, training_set.info.horizons)
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
@@ -222,8 +216,8 @@ def predict(experiment_path: str):
 
         forecasts = []
         for horizon in training_set.info.horizons:
-            for batch in training_set.sequential_input_batches(1000, horizon):
-                forecasts.extend(session.run(models[horizon], feed_dict={inputs: batch}))
+            for batch, batch_mask in training_set.sequential_input_batches(1000, horizon):
+                forecasts.extend(session.run(models[horizon], feed_dict={inputs: batch, input_masks: batch_mask}))
 
         forecasts_df = pd.DataFrame(forecasts)
         forecasts_df.columns = [f'F{i}' for i in range(1, len(forecasts_df.columns) + 1)]

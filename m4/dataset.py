@@ -37,6 +37,7 @@ class M4DatasetSplit(Enum):
 class M4Batch(NamedTuple):
     horizon: int
     inputs: np.ndarray
+    input_masks: np.ndarray
     targets: np.ndarray
     target_mask: np.ndarray
     masep: np.ndarray
@@ -81,6 +82,7 @@ class M4Dataset:
         indices_subset = list(set(indices_filter).intersection(set(timeseries_with_same_horizon)))
 
         batch_input = np.zeros(shape=(batch_size, M4_INPUT_MAXSIZE), dtype=np.float32)
+        batch_input_masks = np.zeros(shape=(batch_size, M4_INPUT_MAXSIZE), dtype=np.float32)
         batch_target = np.zeros(shape=(batch_size, sampled_horizon), dtype=np.float32)
         batch_target_mask = np.zeros(shape=(batch_size, sampled_horizon), dtype=np.float32)
         history_limit = M4_SAMPLING_WINDOW_LIMIT[sampled_horizon]
@@ -92,11 +94,13 @@ class M4Dataset:
             ts_input = np.flip(ts[max(0, sampled_point - M4_INPUT_MAXSIZE):sampled_point])
             ts_target = ts[sampled_point:min(sampled_point + sampled_horizon, len(ts))]
             batch_input[i, :len(ts_input)] = ts_input
+            batch_input_masks[i, :len(ts_index)] = 1.0
             batch_target[i, :len(ts_target)] = ts_target
             batch_target_mask[i, :len(ts_target)] = 1.0
 
         return M4Batch(horizon=sampled_horizon,
                        inputs=batch_input,
+                       input_masks=batch_input_masks,
                        targets=batch_target,
                        target_mask=batch_target_mask,
                        masep=self.masep[sampled_indices])
@@ -109,10 +113,12 @@ class M4Dataset:
             batch_indices = indices_for_horizon[i * batch_size: (i + 1) * batch_size]
             batch_timeseries = [self.data[j] for j in batch_indices]
             inputs = np.zeros(shape=(len(batch_timeseries), M4_INPUT_MAXSIZE), dtype=np.float32)
+            input_masks = np.zeros(shape=(len(batch_timeseries), M4_INPUT_MAXSIZE), dtype=np.float32)
             for ts_index, ts in enumerate(batch_timeseries):
                 ts_last_window = np.flip(ts[max(0, len(ts) - M4_INPUT_MAXSIZE):])
                 inputs[ts_index, :len(ts_last_window)] = ts_last_window
-            yield inputs
+                input_masks[ts_index, :len(ts_last_window)] = 1.0
+            yield inputs, input_masks
 
     def __get_cached_dataset(self, cache_file_path: str) -> np.ndarray:
         if not os.path.isfile(cache_file_path):

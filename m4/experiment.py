@@ -7,7 +7,7 @@ import numpy as np
 
 params_file_name = 'params.json'
 ts_indices_file_name = 'ts_ids_subset.npz'
-input_mask_file_name = 'input_mask.npz'
+input_dropout_file_name = 'input_dropout.npz'
 
 
 class ExperimentParameters(NamedTuple):
@@ -60,18 +60,18 @@ class ExperimentParameters(NamedTuple):
 class M4Experiment(NamedTuple):
     parameters: ExperimentParameters
     timeseries_indices: np.ndarray
-    input_mask: np.ndarray
+    input_dropout: np.ndarray
 
     def persist(self, experiment_dir_path: str) -> None:
         Path(experiment_dir_path).mkdir(parents=True, exist_ok=False)
         self.parameters.persist(os.path.join(experiment_dir_path, params_file_name))
         self.timeseries_indices.dump(os.path.join(experiment_dir_path, ts_indices_file_name))
-        self.input_mask.dump(os.path.join(experiment_dir_path, input_mask_file_name))
+        self.input_dropout.dump(os.path.join(experiment_dir_path, input_dropout_file_name))
 
     @staticmethod
     def load(experiment_dir_path: str) -> 'M4Experiment':
         return M4Experiment(parameters=ExperimentParameters.load(os.path.join(experiment_dir_path, params_file_name)),
                             timeseries_indices=np.load(os.path.join(experiment_dir_path, ts_indices_file_name),
                                                        allow_pickle=True),
-                            input_mask=np.load(os.path.join(experiment_dir_path, input_mask_file_name),
-                                               allow_pickle=True))
+                            input_dropout=np.load(os.path.join(experiment_dir_path, input_dropout_file_name),
+                                                  allow_pickle=True))

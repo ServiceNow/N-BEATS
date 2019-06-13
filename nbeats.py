@@ -151,18 +151,17 @@ class NBeatsStack:
     def __init__(self, blocks: List[NBeatsBlock]):
         self.blocks = blocks
 
-    def build(self, inputs):
+    def build(self, inputs, input_mask=None):
         with tf.variable_scope('nbeats-blocks', reuse=tf.AUTO_REUSE):
             residuals = inputs
             stack_forecast = []
             for block in self.blocks:
-                # TODO: fix 0-like mask, it works for M4 but is not generally applicable.
-                mask = tf.not_equal(residuals, tf.zeros_like(residuals))
                 backcast, forecast = block.build(residuals)
                 residuals = residuals - backcast
                 stack_forecast.append(forecast)
 
-                residuals = tf.multiply(residuals, tf.cast(mask, residuals.dtype))
+                if input_mask is not None:
+                    residuals = tf.multiply(residuals, tf.cast(input_mask, residuals.dtype))
         return residuals, tf.add_n(stack_forecast) if len(stack_forecast) > 0 else 0.0
 
 
@@ -171,11 +170,11 @@ class NBeats:
                  stacks: List[NBeatsStack]):
         self.stacks = stacks
 
-    def build(self, inputs):
+    def build(self, inputs, input_mask=None):
         residuals = inputs
         stacks_forecast = 0.0
         for i, stack in enumerate(self.stacks):
             with tf.variable_scope(f'nbeats-stack-{i}', reuse=tf.AUTO_REUSE):
-                residuals, forecast = stack.build(residuals)
+                residuals, forecast = stack.build(residuals, input_mask)
                 stacks_forecast = stacks_forecast + forecast
         return inputs[:, :1] + stacks_forecast

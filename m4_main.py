@@ -10,7 +10,7 @@ from m4.experiment import ExperimentParameters, M4Experiment
 from m4.model import train, predict
 from m4.settings import M4_EXPERIMENTS_DIR, M4_PREDICTION_FILE_NAME
 from m4.summary import summary
-from m4.utils import build_experiment_name, params_cartesian_product, build_input_mask
+from m4.utils import build_experiment_name, params_cartesian_product, build_input_dropout_mask
 
 training_parameters = {
     'repeat': list(range(10)),  # must always be an array even for only one repeat, for example: [1]
@@ -72,7 +72,7 @@ def init_experiment(name: str = ''):
         experiment_parameters = ExperimentParameters(**{**training_parameters, **parameters_instance})
         M4Experiment(parameters=experiment_parameters,
                      timeseries_indices=dataset.sample_indices(experiment_parameters.ts_per_model_ratio),
-                     input_mask=build_input_mask(experiment_parameters.input_dropout)). \
+                     input_dropout=build_input_dropout_mask(experiment_parameters.input_dropout)). \
             persist(os.path.join(experiments_dir_path, build_experiment_name(parameters_instance)))
 
 
