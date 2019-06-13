@@ -74,6 +74,7 @@ def init_experiment(name: str = ''):
                      timeseries_indices=dataset.sample_indices(experiment_parameters.ts_per_model_ratio),
                      input_dropout=build_input_dropout_mask(experiment_parameters.input_dropout)). \
             persist(os.path.join(experiments_dir_path, build_experiment_name(parameters_instance)))
+    print(experiments_dir_path)
 
 
 if __name__ == '__main__':
