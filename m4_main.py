@@ -28,10 +28,10 @@ training_parameters = {
     'weight_decay': 0.0,
     'iterations': 30001,
 
-    'training_checkpoint_interval': 3000,
+    'training_checkpoint_interval': 10000,
 
     # model architecture
-    'model_type': 'generic',  # or 'interpretable'
+    'model_type': 'interpretable',  # or 'generic',
 
     # generic model parameters (these parameters will be ignored for 'interpretable' model type)
     'stacks': 30,
