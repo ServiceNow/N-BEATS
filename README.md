@@ -44,7 +44,7 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
     $ make init_experiment
     ````
     Once the experiment is created you should see the path to experiment, relative to docker container, where `<project-path>` is mounted as `/project`.
-    For example: `/project/experiments/190614_174309_generic`
+    For example: for `/project/experiments/190614_174309_generic`
     Look at the model names in `../experiments/190614_174309_generic`
 1. Train a model for each experiment. On all available GPU(s):
     ```bash
