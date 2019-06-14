@@ -6,7 +6,8 @@ Implementation of [https://arxiv.org/abs/1905.10437]()
 
 ### Prerequisites
 
-Although, it is possible to run the model on CPU the provided scripts are built to run on GPU.
+The instructions below assume an infrastructure with NVidia GPU support.
+Although it is possible to run experiments on CPU, some tweaking to Dockerfile and requirements.txt is needed and it's not covered in this document.
 
 The GPU based infrastructure requires:
 
