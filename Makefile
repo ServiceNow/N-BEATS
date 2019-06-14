@@ -1,7 +1,8 @@
 IMAGE_NAME = nbeats
 PROJECT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
+GPUS := $(if $(gpus),$(gpus),all)
 
-DOCKER_CMD = docker run -it --runtime=nvidia --rm --user $$(id -u) -v ${PROJECT_DIR}:/project -w /project/source -e PYTHONPATH=/project/source ${IMAGE_NAME}
+DOCKER_CMD = docker run -it --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=$(GPUS) --rm --user $$(id -u) -v ${PROJECT_DIR}:/project -w /project/source -e PYTHONPATH=/project/source ${IMAGE_NAME}
 
 build:
 	docker build . -t ${IMAGE_NAME}
@@ -20,4 +21,3 @@ summary:
 
 bash:
 	@eval ${DOCKER_CMD} bash
-
