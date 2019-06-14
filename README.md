@@ -49,7 +49,7 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
     ```bash
     $ make experiment=<experiment-name>/<model-name> train
     ```
-    Following the example above the real command should look like:
+    Following example above the command would look like:
     ```bash
     $ make experiment=190614_174309_generic/repeat=0,input_size=2,loss_name=MAPE train
     ```
