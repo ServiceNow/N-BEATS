@@ -36,7 +36,7 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
     The `load_training_dataset` will download, unpack and cache (in npz format) M4 training dataset.
     The files will be stored in `<project-path>/dataset`
 1. Select type of the model to train: `generic` or `interpretable`.
-    In `source/m4_main.py` find `training_parameters` dictionary and set `model_type` value,
+    In `source/m4_main.py` find `training_parameters` dictionary and adjust `model_type` value, if needed.
     `generic` is already set as default.
 1. Initialize experiment.
     This step creates experiment directories with the settings defined in `m4_main.py` `training_parameters` dictionary.
