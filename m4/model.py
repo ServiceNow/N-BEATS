@@ -9,7 +9,7 @@ from m4.dataset import M4Dataset, M4DatasetSplit
 from m4.experiment import M4Experiment
 from m4.settings import M4_INPUT_MAXSIZE, M4_PREDICTION_FILE_NAME
 from m4.utils import summary_log
-from nbeats import NBeats, NBeatsStack, NBeatsBlock, NBeatsHarmonicsBlock, NBeatsPolynomialBlock
+from nbeats import NBeats, NBeatsStack, NBeatsBlock, SeasonalityBlock, TrendBlock
 
 
 def model_graph(input_placeholder, input_mask_placeholder, experiment: M4Experiment, horizons: Iterable) -> Dict:
@@ -21,7 +21,6 @@ def model_graph(input_placeholder, input_mask_placeholder, experiment: M4Experim
                 model_input = input_placeholder[:, :input_size]
                 input_mask = tf.multiply(input_mask_placeholder[:, :input_size],
                                          experiment.input_dropout[None, :input_size])
-                # TODO: show benefit on validation
                 apply_input_delevel = horizon == 13 or horizon == 48
 
                 # delevel input of Hourly and Weekly
@@ -40,22 +39,22 @@ def model_graph(input_placeholder, input_mask_placeholder, experiment: M4Experim
                                                  for _ in range(experiment.parameters.blocks_in_stack)])
                                     for _ in range(experiment.parameters.stacks)])
                 elif experiment.parameters.model_type == 'interpretable':
-                    trend_stack = NBeatsStack([NBeatsPolynomialBlock(input_size=input_size,
-                                                                     hidden_units=experiment.parameters.trend_block_fc_size,
-                                                                     layers=experiment.parameters.trend_block_fc_layers,
-                                                                     polynomial_order=experiment.parameters.trend_order,
-                                                                     forecast_horizon=horizon,
-                                                                     activation_fn=tf.nn.relu,
-                                                                     regularizer=tf.contrib.layers.l2_regularizer(
+                    trend_stack = NBeatsStack([TrendBlock(input_size=input_size,
+                                                          hidden_units=experiment.parameters.trend_block_fc_size,
+                                                          layers=experiment.parameters.trend_block_fc_layers,
+                                                          polynomial_order=experiment.parameters.trend_order,
+                                                          forecast_horizon=horizon,
+                                                          activation_fn=tf.nn.relu,
+                                                          regularizer=tf.contrib.layers.l2_regularizer(
                                                                          scale=experiment.parameters.weight_decay))
                                                for _ in range(experiment.parameters.trend_blocks)])
-                    seasonality_stack = NBeatsStack([NBeatsHarmonicsBlock(input_size=input_size,
-                                                                          hidden_units=experiment.parameters.seasonality_block_fc_size,
-                                                                          layers=experiment.parameters.seasonality_block_fc_layers,
-                                                                          num_of_harmonics=experiment.parameters.seasonality_num_harmonics,
-                                                                          forecast_horizon=horizon,
-                                                                          activation_fn=tf.nn.relu,
-                                                                          regularizer=tf.contrib.layers.l2_regularizer(
+                    seasonality_stack = NBeatsStack([SeasonalityBlock(input_size=input_size,
+                                                                      hidden_units=experiment.parameters.seasonality_block_fc_size,
+                                                                      layers=experiment.parameters.seasonality_block_fc_layers,
+                                                                      num_of_harmonics=experiment.parameters.seasonality_num_harmonics,
+                                                                      forecast_horizon=horizon,
+                                                                      activation_fn=tf.nn.relu,
+                                                                      regularizer=tf.contrib.layers.l2_regularizer(
                                                                               scale=experiment.parameters.weight_decay))
                                                      for _ in range(experiment.parameters.seasonality_blocks)])
                     model = NBeats([trend_stack, seasonality_stack])
@@ -116,7 +115,6 @@ def train(experiment_path: str):
             with tf.variable_scope(f'loss_horizon_{horizon}', reuse=False):
                 forecast = models[horizon]
                 target = targets[horizon]
-                # TODO: clarify masking
                 target_mask = target_masks[horizon]
                 if loss_name == 'MASE':
                     masked_masep_inv = tf.div_no_nan(target_mask, masep[:, None])

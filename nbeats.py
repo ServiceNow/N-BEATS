@@ -57,7 +57,7 @@ class NBeatsBlock:
         return basis_output[:, self.forecast_horizon:], basis_output[:, :self.forecast_horizon]
 
 
-class NBeatsPolynomialBlock(NBeatsBlock):
+class TrendBlock(NBeatsBlock):
     def __init__(self,
                  input_size: int,
                  hidden_units: int,
@@ -93,8 +93,8 @@ class NBeatsPolynomialBlock(NBeatsBlock):
             backcast += tf.pow(t_backcast, float(i)) * basis_output[:, self.polynomial_order + 1 + i, None]
         return backcast, forecast
 
-# TODO: rename
-class NBeatsHarmonicsBlock(NBeatsBlock):
+
+class SeasonalityBlock(NBeatsBlock):
     def __init__(self,
                  input_size: int,
                  hidden_units: int,

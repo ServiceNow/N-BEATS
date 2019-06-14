@@ -31,7 +31,7 @@ training_parameters = {
     'training_checkpoint_interval': 10000,
 
     # model architecture
-    'model_type': 'interpretable',  # or 'generic',
+    'model_type': 'generic',  # 'interpretable',
 
     # generic model parameters (these parameters will be ignored for 'interpretable' model type)
     'stacks': 30,
