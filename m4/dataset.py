@@ -30,8 +30,8 @@ class M4Info:
 class M4DatasetSplit(Enum):
     TRAIN = 'train'
     TEST = 'test'
-    TRAIN_SUBSET = 'train-subset'
-    VALIDATION_SUBSET = 'validation-subset'
+    TRAIN_SUBSET = 'train_subset'
+    VALIDATION_SUBSET = 'validation_subset'
 
 
 class M4Batch(NamedTuple):

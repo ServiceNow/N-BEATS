@@ -16,7 +16,7 @@ training_parameters = {
     'repeat': list(range(10)),  # must always be an array even for only one repeat, for example: [1]
 
     # training dataset
-    'training_split': 'train-subset',
+    'training_split': 'train_subset',  # train
     'input_size': list(range(2, 8)),
     'ts_per_model_ratio': 0.2,
     'input_dropout': 0.25,
@@ -82,7 +82,8 @@ if __name__ == '__main__':
     parser.add_argument('cmd', metavar='CMD', type=str, choices=['load_training_dataset',
                                                                  'init_experiment', 'train', 'summary'],
                         help='Command to execute')
-    parser.add_argument('--name', type=str, default='', help='Experiment name')
+    parser.add_argument('--experiment', type=str, default='', help='Experiment name')
+    parser.add_argument('--validation', type=bool, default=False, help='Validation mode')
 
     args = parser.parse_args()
 
@@ -99,6 +100,8 @@ if __name__ == '__main__':
         if not os.path.isfile(predictions_file_path):
             experiment_ensemble(experiment_dir=os.path.join(M4_EXPERIMENTS_DIR, args.name), overwrite=False)
         result = summary(prediction_csv_path=predictions_file_path,
-                         training_set=M4Dataset(M4DatasetSplit.TRAIN_SUBSET),
-                         test_set=M4Dataset(M4DatasetSplit.VALIDATION_SUBSET))
+                         training_set=M4Dataset(
+                             M4DatasetSplit.TRAIN_SUBSET if args.validation else M4DatasetSplit.TRAIN),
+                         test_set=M4Dataset(
+                             M4DatasetSplit.VALIDATION_SUBSET if args.validation else M4DatasetSplit.TEST))
         print(result)

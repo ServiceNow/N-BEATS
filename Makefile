@@ -14,10 +14,10 @@ init_experiment:
 	@eval ${DOCKER_CMD} python m4_main.py init_experiment
 
 train:
-	@eval ${DOCKER_CMD} python m4_main.py train --name $(experiment)
+	@eval ${DOCKER_CMD} python m4_main.py train --experiment $(experiment)
 
 summary:
-	@eval ${DOCKER_CMD} python m4_main.py summary --name $(experiment)
+	@eval ${DOCKER_CMD} python m4_main.py summary --experiment $(experiment)
 
 bash:
 	@eval ${DOCKER_CMD} bash
