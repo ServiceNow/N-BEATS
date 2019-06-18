@@ -1,23 +1,18 @@
 # N-BEATS Neural basis expansion analysis for interpretable time series forecasting
 
-Implementation of [https://arxiv.org/abs/1905.10437]()
+Implementation of [https://arxiv.org/abs/1905.10437](https://arxiv.org/abs/1905.10437)
 
 ## Instruction to reproduce M4 results
 
 ### Prerequisites
 
-The instructions below assume an infrastructure with NVidia GPU support.
-Although it is possible to run experiments on CPU, some tweaking to Dockerfile and requirements.txt is needed and it's not covered in this document.
-
-The GPU based infrastructure requires:
-
 * CUDA compatible GPU (we use CUDA 10.0 by default)
 * nvidia-docker 2.0
 
 
-### Train models
+### Training and Evaluation
 
-We use ensemble of 180 models, where models can be trained independently, in parallel.
+We use ensemble of 180 models, where models can be trained in parallel.
 If your infrastructure supports clustering then we recommend to run the instructions below on a shared storage,
 so that each docker container would share same code base, data source and experiments directory.
 Also, make sure all the commands run where nvidia-docker 2 is available.
@@ -31,10 +26,10 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
 1. Download training set.
     ```bash
     $ cd source
-    $ make load_training_dataset
+    $ ./run.sh m4/main.py download_training_dataset
     ```
-    The `load_training_dataset` will download, unpack and cache (in npz format) M4 training dataset.
-    The files will be stored in `<project-path>/dataset`
+    This command will build docker image, download, unpack and cache (in npz format) M4 training dataset.
+    The files will be stored in `<project-path>/dataset`.
 1. Select type of the model to train: `generic` or `interpretable`.
     In `source/m4_main.py` find `training_parameters` dictionary and adjust `model_type` value, if needed.
     `generic` is already set as default.
@@ -79,3 +74,7 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
     sMAPE  12.858686   9.365132  12.147478  3.984333  11.235136
     OWA     0.755116   0.812525   0.823808  0.876615   0.799172
     ```
+
+#### Train and validating without test set
+
+Change `training_split` key in `m4_main.py` to 

@@ -8,47 +8,10 @@ from m4.dataset import M4Dataset, M4DatasetSplit
 from m4.ensemble import experiment_ensemble
 from m4.experiment import ExperimentParameters, M4Experiment
 from m4.model import train, predict
+from m4.parameters import training_parameters
 from m4.settings import M4_EXPERIMENTS_DIR, M4_PREDICTION_FILE_NAME
 from m4.summary import summary
 from m4.utils import build_experiment_name, params_cartesian_product, build_input_dropout_mask
-
-training_parameters = {
-    'repeat': list(range(10)),  # must always be an array even for only one repeat, for example: [1]
-
-    # training dataset
-    'training_split': 'train_subset',  # train
-    'input_size': list(range(2, 8)),
-    'ts_per_model_ratio': 0.2,
-    'input_dropout': 0.25,
-    'batch_size': 1024,
-
-    # training parameters
-    'loss_name': ['MASE', 'MAPE', 'SMAPE'],
-    'init_lr': 0.001,
-    'weight_decay': 0.0,
-    'iterations': 30001,
-
-    'training_checkpoint_interval': 10000,
-
-    # model architecture
-    'model_type': 'generic',  # 'interpretable',
-
-    # generic model parameters (these parameters will be ignored for 'interpretable' model type)
-    'stacks': 30,
-    'blocks_in_stack': 1,
-    'block_fc_size': 512,
-    'block_fc_layers': 4,
-
-    # interpretable model parameters (these parameters will be ignored for 'generic' model type)
-    'trend_blocks': 3,
-    'trend_block_fc_size': 256,
-    'trend_block_fc_layers': 4,
-    'trend_order': 3,
-    'seasonality_blocks': 3,
-    'seasonality_block_fc_size': 2048,
-    'seasonality_block_fc_layers': 4,
-    'seasonality_num_harmonics': 1
-}
 
 
 def load_training_dataset():
@@ -79,7 +42,7 @@ def init_experiment(name: str = ''):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('cmd', metavar='CMD', type=str, choices=['load_training_dataset',
+    parser.add_argument('cmd', metavar='CMD', type=str, choices=['download_training_dataset',
                                                                  'init_experiment', 'train', 'summary'],
                         help='Command to execute')
     parser.add_argument('--experiment', type=str, default='', help='Experiment name')
@@ -87,7 +50,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.cmd == 'load_training_dataset':
+    if args.cmd == 'download_training_dataset':
         load_training_dataset()
     elif args.cmd == 'init_experiment':
         init_experiment(args.experiment)

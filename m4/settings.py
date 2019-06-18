@@ -12,8 +12,8 @@ M4_NAIVE2_URL = 'https://github.com/M4Competition/M4-methods/raw/master/Point%20
 #
 # Settings for default environment (see Docker setup in README)
 #
-M4_DATA_DIR = os.path.join(os.sep, 'project', 'dataset')
-M4_EXPERIMENTS_DIR = os.path.join(os.sep, 'project', 'experiments')
+M4_DATA_DIR = os.path.join(os.sep, 'project', 'dataset', 'm4')
+M4_EXPERIMENTS_DIR = os.path.join(os.sep, 'project', 'experiments', 'm4')
 M4_PREDICTION_FILE_NAME = 'predictions.csv'
 
 #
