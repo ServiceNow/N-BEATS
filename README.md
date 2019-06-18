@@ -37,24 +37,18 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
     This step creates experiment directories with the settings defined in `m4_main.py` `training_parameters` dictionary.
     ```bash
     $ ./run.sh m4/main.py init_experiment
-    ````
+    ```
     This command will print experiment name in the end. The `../experiments/m4/<experiment-name>` directory will contain 
     model names.
-1. Train a model for each experiment. On all available GPU(s):
+1. Train each model
     ```bash
-    $ make experiment=<experiment-name>/<model-name> train
+    $ NVIDIA_VISIBLE_DEVICES=<gpu-id> ./run.sh m4/main.py train --experiment=<experiment-name>/<model-name>
     ```
-    Following example above the command would look like:
-    ```bash
-    $ make experiment=190614_174309_generic/repeat=0,input_size=2,loss_name=MAPE train
-    ```
-
-    If you want to dedicate a specific GPU for a model you can specify gpu id as following:
-    ```bash
-    $ make experiment=<experiment-name>/<model-name> gpus=1 train
-    ```
+    
+    `NVIDIA_VISIBLE_DEVICES` is optional, if not provided the model will trained on all available GPUs.
+    
     Note: training sessions are restartable and can be stopped and restarted any time.
-    Checkpoint interval can be configured in `m4_main.py`, see `training_checkpoint_interval` key.
+    Checkpoint interval can be configured in `m4/parameters.py`, see `training_checkpoint_interval` key.
 
     Depending on your infrastructure you may want to write a script to automatically go through all models
     in the experiment directory and start training processes in parallel.
@@ -64,7 +58,7 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
     containing forecast for all 100 000 time series.
 
     ```bash
-    $ make experiment=<experiment-name> summary
+    $ ./run.sh m4/main.py summary --experiment=<experiment-name>
     ```
     This command will build ensemble, download test set, naive2 forecast (for OWA) and calculate M4-report style metric for the ensemble.
 
@@ -77,4 +71,5 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
 
 #### Train and validating without test set
 
-Change `training_split` key in `m4_main.py` to 
+Change `training_split` key in `m4/parameters.py` to `train_subset` then initialize experiment and train all models.
+When doing summary, run: `$ ./run.sh m4/main.py summary --experiment=<experiment-name> --validation`  
