@@ -16,7 +16,7 @@ training_parameters = {
     'repeat': list(range(10)),  # must always be an array even for only one repeat, for example: [1]
 
     # training dataset
-    'training_split': 'train',
+    'training_split': 'train-subset',
     'input_size': list(range(2, 8)),
     'ts_per_model_ratio': 0.2,
     'input_dropout': 0.25,
@@ -99,6 +99,6 @@ if __name__ == '__main__':
         if not os.path.isfile(predictions_file_path):
             experiment_ensemble(experiment_dir=os.path.join(M4_EXPERIMENTS_DIR, args.name), overwrite=False)
         result = summary(prediction_csv_path=predictions_file_path,
-                         training_set=M4Dataset(M4DatasetSplit.TRAIN),
-                         test_set=M4Dataset(M4DatasetSplit.TEST))
+                         training_set=M4Dataset(M4DatasetSplit.TRAIN_SUBSET),
+                         test_set=M4Dataset(M4DatasetSplit.VALIDATION_SUBSET))
         print(result)
