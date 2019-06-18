@@ -98,7 +98,7 @@ if __name__ == '__main__':
     elif args.cmd == 'summary':
         predictions_file_path = os.path.join(M4_EXPERIMENTS_DIR, args.experiment, M4_PREDICTION_FILE_NAME)
         if not os.path.isfile(predictions_file_path):
-            experiment_ensemble(experiment_dir=os.path.join(M4_EXPERIMENTS_DIR, args.name), overwrite=False)
+            experiment_ensemble(experiment_dir=os.path.join(M4_EXPERIMENTS_DIR, args.experiment), overwrite=False)
         result = summary(prediction_csv_path=predictions_file_path,
                          training_set=M4Dataset(
                              M4DatasetSplit.TRAIN_SUBSET if args.validation else M4DatasetSplit.TRAIN),
