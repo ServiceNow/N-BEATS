@@ -30,14 +30,15 @@ def init_experiment(name: str = ''):
         name = training_parameters['model_type']
     timestamp = time.strftime(f'%y%m%d_%H%M%S')
     dataset = M4Dataset(split=M4DatasetSplit[training_parameters['training_split'].upper()])
-    experiments_dir_path = os.path.join(M4_EXPERIMENTS_DIR, f'{timestamp}_{name}')
+    experiment_name = f'{timestamp}_{name}'
+    experiments_dir_path = os.path.join(M4_EXPERIMENTS_DIR, experiment_name)
     for parameters_instance in tqdm(params_cartesian_product(training_parameters)):
         experiment_parameters = ExperimentParameters(**{**training_parameters, **parameters_instance})
         M4Experiment(parameters=experiment_parameters,
                      timeseries_indices=dataset.sample_indices(experiment_parameters.ts_per_model_ratio),
                      input_dropout=build_input_dropout_mask(experiment_parameters.input_dropout)). \
             persist(os.path.join(experiments_dir_path, build_experiment_name(parameters_instance)))
-    print(experiments_dir_path)
+    print(experiment_name)
 
 
 if __name__ == '__main__':

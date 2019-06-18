@@ -29,17 +29,17 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
     $ ./run.sh m4/main.py download_training_dataset
     ```
     This command will build docker image, download, unpack and cache (in npz format) M4 training dataset.
-    The files will be stored in `<project-path>/dataset`.
+    The files will be stored in `<project-path>/dataset/m4`.
 1. Select type of the model to train: `generic` or `interpretable`.
-    In `source/m4_main.py` find `training_parameters` dictionary and adjust `model_type` value, if needed.
+    In `m4/parameters.py` find `training_parameters` dictionary and adjust `model_type` value, if needed.
     `generic` is already set as default.
 1. Initialize experiment.
     This step creates experiment directories with the settings defined in `m4_main.py` `training_parameters` dictionary.
     ```bash
-    $ make init_experiment
+    $ ./run.sh m4/main.py init_experiment
     ````
-    Once the experiment is created you should see the path to experiment, relative to docker container, where `<project-path>` is mounted as `/project`.
-    For example: for `/project/experiments/190614_174309_generic` see the model names in `../experiments/190614_174309_generic`
+    This command will print experiment name in the end. The `../experiments/m4/<experiment-name>` directory will contain 
+    model names.
 1. Train a model for each experiment. On all available GPU(s):
     ```bash
     $ make experiment=<experiment-name>/<model-name> train
