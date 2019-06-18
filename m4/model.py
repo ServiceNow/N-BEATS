@@ -21,7 +21,7 @@ def model_graph(input_placeholder, input_mask_placeholder, experiment: M4Experim
                 model_input = input_placeholder[:, :input_size]
                 input_mask = tf.multiply(input_mask_placeholder[:, :input_size],
                                          experiment.input_dropout[None, :input_size])
-                apply_input_delevel = horizon == 13 or horizon == 48
+                apply_input_delevel = False  # horizon == 13 or horizon == 48
 
                 # delevel input of Hourly and Weekly
                 input_level = model_input[:, :1]
