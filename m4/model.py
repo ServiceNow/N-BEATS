@@ -21,9 +21,26 @@ def model_graph(input_placeholder, input_mask_placeholder, experiment: M4Experim
                 model_input = input_placeholder[:, :input_size]
                 input_mask = tf.multiply(input_mask_placeholder[:, :input_size],
                                          experiment.input_dropout[None, :input_size])
-                apply_input_delevel = False  # horizon == 13 or horizon == 48
+                #
+                # SMAPE on validation set shows performance improvement when Hourly and Weekly timeseries are
+                # de-leveled.
+                #
+                # Without de-leveling (on validation set for generic model):
+                # ------------------------------------------------------------
+                #           Yearly  Quarterly    Monthly    Others    Average
+                # sMAPE  13.244822   9.907533  11.070384  4.137453  10.944774
+                #
+                #
+                # Hourly and Weekly de-leveling (on validation set):
+                # ------------------------------------------------------------
+                #           Yearly  Quarterly    Monthly    Others    Average
+                # sMAPE  13.248848   9.903943  11.062088  3.941079  10.931038
+                #
+                #
+                # de-leveling of other seasonal patterns didn't have positive effect on validation set.
+                apply_input_delevel = horizon == 13 or horizon == 48
 
-                # delevel input of Hourly and Weekly
+                # de-level input of Hourly and Weekly
                 input_level = model_input[:, :1]
                 if apply_input_delevel:
                     model_input = model_input - input_level
