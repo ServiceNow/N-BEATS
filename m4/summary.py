@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import patoolib
 
-from m4.dataset import M4Dataset, M4Info
+from m4.dataset import M4Dataset, M4DatasetSplit, M4Info
 from m4.settings import M4_DATA_DIR, M4_NAIVE2_URL
 from m4.utils import csv_to_df, download_url, url_file_name
 
@@ -17,33 +17,38 @@ def summary(prediction_csv_path: str, training_set: M4Dataset, test_set: M4Datas
     model_prediction = csv_to_df(prediction_csv_path, id_column_index=0).values
     model_prediction = np.array([x[~np.isnan(x)] for x in model_prediction])
 
-    naive2_csv_path = os.path.join(M4_DATA_DIR, 'submission-Naive2.csv')
-    if not os.path.isfile(naive2_csv_path):
-        naive2_package_path = os.path.join(M4_DATA_DIR, url_file_name(M4_NAIVE2_URL))
-        download_url(M4_NAIVE2_URL, target_directory=M4_DATA_DIR)
-        patoolib.extract_archive(naive2_package_path, outdir=M4_DATA_DIR)
-    naive2_prediction = csv_to_df(naive2_csv_path, id_column_index=0).values
-    naive2_prediction = np.array([x[~np.isnan(x)] for x in naive2_prediction])
-
-    model_mase_summary = weighted_average(scores=mase(model_prediction, test_set.data, training_set.masep),
-                                          m4_info=training_set.info,
-                                          index_name='MASE')
-    naive2_mase_summary = weighted_average(scores=mase(naive2_prediction, test_set.data, training_set.masep),
-                                           m4_info=training_set.info,
-                                           index_name='MASE_naive2')
     model_smape_summary = weighted_average(scores=smape(model_prediction, test_set.data),
                                            m4_info=training_set.info,
                                            index_name='sMAPE')
-    naive2_smape_summary = weighted_average(scores=smape(naive2_prediction, test_set.data),
-                                            m4_info=training_set.info,
-                                            index_name='sMAPE_naive2')
 
-    owa_score = owa(model_mase_summary.values,
-                    model_smape_summary.values,
-                    naive2_mase_summary.values,
-                    naive2_smape_summary.values)
-    owa_summary = pd.DataFrame(owa_score, columns=model_smape_summary.columns)
-    owa_summary.index = ['OWA']
+    if test_set.split == M4DatasetSplit.TEST:
+        naive2_csv_path = os.path.join(M4_DATA_DIR, 'submission-Naive2.csv')
+        if not os.path.isfile(naive2_csv_path):
+            naive2_package_path = os.path.join(M4_DATA_DIR, url_file_name(M4_NAIVE2_URL))
+            download_url(M4_NAIVE2_URL, target_directory=M4_DATA_DIR)
+            patoolib.extract_archive(naive2_package_path, outdir=M4_DATA_DIR)
+        naive2_prediction = csv_to_df(naive2_csv_path, id_column_index=0).values
+        naive2_prediction = np.array([x[~np.isnan(x)] for x in naive2_prediction])
+
+        model_mase_summary = weighted_average(scores=mase(model_prediction, test_set.data, training_set.masep),
+                                              m4_info=training_set.info,
+                                              index_name='MASE')
+        naive2_mase_summary = weighted_average(scores=mase(naive2_prediction, test_set.data, training_set.masep),
+                                               m4_info=training_set.info,
+                                               index_name='MASE_naive2')
+
+        naive2_smape_summary = weighted_average(scores=smape(naive2_prediction, test_set.data),
+                                                m4_info=training_set.info,
+                                                index_name='sMAPE_naive2')
+
+        owa_score = owa(model_mase_summary.values,
+                        model_smape_summary.values,
+                        naive2_mase_summary.values,
+                        naive2_smape_summary.values)
+        owa_summary = pd.DataFrame(owa_score, columns=model_smape_summary.columns)
+        owa_summary.index = ['OWA']
+    else:  # Do not calculate OWA for validation set
+        owa_summary = pd.DataFrame()
 
     return pd.concat([model_smape_summary, owa_summary])
 
