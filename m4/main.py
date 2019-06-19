@@ -47,6 +47,7 @@ if __name__ == '__main__':
                                                                  'init_experiment', 'train', 'summary'],
                         help='Command to execute')
     parser.add_argument('--experiment', type=str, default='', help='Experiment name')
+    parser.add_argument('--model', type=str, default='', help='Model name')
     parser.add_argument('--validation', type=bool, default=False, help='Validation mode')
 
     args = parser.parse_args()
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     elif args.cmd == 'init_experiment':
         init_experiment(args.experiment)
     elif args.cmd == 'train':
-        experiment_path = os.path.join(M4_EXPERIMENTS_DIR, args.experiment)
+        experiment_path = os.path.join(M4_EXPERIMENTS_DIR, args.experiment, args.model)
         train(experiment_path)
         predict(experiment_path)
     elif args.cmd == 'summary':

@@ -13,9 +13,11 @@ Implementation of [https://arxiv.org/abs/1905.10437](https://arxiv.org/abs/1905.
 ### Training and Evaluation
 
 We use ensemble of 180 models, where models can be trained in parallel.
-If your infrastructure supports clustering then we recommend to run the instructions below on a shared storage,
-so that each docker container would share same code base, data source and experiments directory.
+If you have multiple GPUs then we recommend to run the instructions below on a shared storage,
+so that each docker container (1 per GPU) would share same code base, data source and experiments directory.
 Also, make sure all the commands run where nvidia-docker 2 is available.
+
+Note: the training time of one model is about 50-60 minutes on NVidia Tesla v100 16GB GPU with ~50% load.
 
 1. Create a directory and clone the project to `source` subdirectory.
     ```bash
@@ -42,7 +44,7 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
     model names.
 1. Train each model
     ```bash
-    $ NVIDIA_VISIBLE_DEVICES=<gpu-id> ./run.sh m4/main.py train --experiment=<experiment-name>/<model-name>
+    $ NVIDIA_VISIBLE_DEVICES=<gpu-id> ./run.sh m4/main.py train --experiment=<experiment-name> --model=<model-name>
     ```
     
     `NVIDIA_VISIBLE_DEVICES` is optional, if not provided the model will trained on all available GPUs.
@@ -50,8 +52,7 @@ Also, make sure all the commands run where nvidia-docker 2 is available.
     Note: training sessions are restartable and can be stopped and restarted any time.
     Checkpoint interval can be configured in `m4/parameters.py`, see `training_checkpoint_interval` key.
 
-    Depending on your infrastructure you may want to write a script to automatically go through all models
-    in the experiment directory and start training processes in parallel.
+    If you have multiple GPUs you may want to write a script to start models training in parallel.    
 1. When all models are trained you can run summary statistics.
 
     Note: to make sure that training is done check if there is `predictions.csv` file in each model directory,
