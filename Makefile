@@ -32,6 +32,14 @@ notebook: .require-port
 	docker run -d --rm ${DOCKER_PARAMETERS} -e HOME=/tmp -p $(port):8888 $(IMAGE) \
 		   bash -c "jupyter lab --ip=0.0.0.0 --no-browser --NotebookApp.token=''"
 
+obuild:
+	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} \
+		python $(experiment)/main.py init --name=$(name)
+orun:
+	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} \
+		   bash -c "`cat ${ROOT}/storage/${experiment}/${instance}/command`"
+
+
 .require-name:
 ifndef name
 	$(error name is required)
