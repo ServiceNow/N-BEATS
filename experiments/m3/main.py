@@ -9,7 +9,7 @@ from fire import Fire
 from common.sampler import TimeseriesSampler
 from datasets.m3 import M3Dataset, M3Meta
 from experiments.experiment import create_experiment
-from experiments.m3.parameters import parameters
+from experiments.m3.parameters import PARAMETERS
 from experiments.parameters import Parameters
 from experiments.trainer import train_nbeats
 from experiments.utils import get_module_path, experiment_path
@@ -21,7 +21,7 @@ module_path = get_module_path()
 
 def init(name: str):
     create_experiment(experiment_path=experiment_path(module_path, name),
-                      parameters=parameters[name],
+                      parameters=PARAMETERS[name],
                       command=lambda path, params: f'python {module_path}/main.py run --path={path}')
 
 
