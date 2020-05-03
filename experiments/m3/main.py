@@ -1,76 +1,78 @@
 import logging
 import os
+from typing import Dict
 
+import gin
 import numpy as np
 import pandas as pd
 import torch as t
 from fire import Fire
 
+from common.experiment import Experiment
 from common.sampler import TimeseriesSampler
+from common.torch.snapshots import SnapshotManager
 from datasets.m3 import M3Dataset, M3Meta
-from experiments.experiment import create_experiment
-from experiments.m3.parameters import PARAMETERS
-from experiments.parameters import Parameters
-from experiments.trainer import train_nbeats
-from experiments.utils import get_module_path, experiment_path
+from experiments.trainer import trainer
 from experiments.utils import to_tensor
+from models.nbeats import generic, interpretable
 from summary.utils import group_values
 
-module_path = get_module_path()
 
+class M3Experiment(Experiment):
+    @gin.configurable()
+    def instance(self,
+                 repeat: int,
+                 lookback: int,
+                 loss: str,
+                 history_size: Dict[str, int],
+                 iterations: Dict[str, int],
+                 model_type: str):
+        dataset = M3Dataset.load(training=True)
 
-def init(name: str):
-    create_experiment(experiment_path=experiment_path(module_path, name),
-                      parameters=PARAMETERS[name],
-                      command=lambda path, params: f'python {module_path}/main.py run --path={path}')
+        forecasts = []
+        for seasonal_pattern in M3Meta.seasonal_patterns:
+            sp_history_size = history_size[seasonal_pattern]
+            horizon = M3Meta.horizons_map[seasonal_pattern]
+            input_size = lookback * horizon
 
+            # Training Set
+            training_values = group_values(dataset.values, dataset.groups, seasonal_pattern)
 
-def run(path: str):
-    experiment_parameters = Parameters.load(path)
+            training_set = TimeseriesSampler(timeseries=training_values,
+                                             insample_size=input_size,
+                                             outsample_size=horizon,
+                                             window_sampling_limit=int(sp_history_size * horizon))
+            if model_type == 'interpretable':
+                model = interpretable(input_size=input_size, output_size=horizon)
+            elif model_type == 'generic':
+                model = generic(input_size=input_size, output_size=horizon)
+            else:
+                raise Exception(f'Unknown model type {model_type}')
 
-    dataset = M3Dataset.load(training=True)
+            # Create/restore trained model
+            snapshot_manager = SnapshotManager(snapshot_dir=os.path.join(self.root, 'snapshots', seasonal_pattern),
+                                               total_iterations=iterations[seasonal_pattern])
+            model = trainer(snapshot_manager=snapshot_manager,
+                            model=model,
+                            training_set=iter(training_set),
+                            timeseries_frequency=M3Meta.frequency_map[seasonal_pattern],
+                            loss_name=loss,
+                            iterations=iterations[seasonal_pattern])
 
-    forecasts = []
-    for seasonal_pattern in M3Meta.seasonal_patterns:
-        history_size_in_horizons = experiment_parameters.history_size_for(seasonal_pattern)
-        horizon = M3Meta.horizons_map[seasonal_pattern]
-        input_size = experiment_parameters.input_size * horizon
+            #
+            # Predict
+            #
+            x, x_mask = map(to_tensor, training_set.last_insample_window())
+            model.eval()
+            with t.no_grad():
+                forecasts.extend(model(x, x_mask).cpu().detach().numpy())
 
-        # Training Set
-        training_values = group_values(dataset.values, dataset.groups, seasonal_pattern)
-
-        if experiment_parameters.validation_mode:
-            training_values = np.array([v[:-horizon] for v in training_values])
-
-        training_set = TimeseriesSampler(timeseries=training_values,
-                                         insample_size=input_size,
-                                         outsample_size=horizon,
-                                         window_sampling_limit=int(history_size_in_horizons * horizon),
-                                         batch_size=experiment_parameters.training_batch_size)
-
-        # Create/restore trained model
-        model = train_nbeats(experiment_path=path,
-                             input_size=input_size,
-                             output_size=horizon,
-                             seasonal_pattern=seasonal_pattern,
-                             experiment_parameters=experiment_parameters,
-                             training_set=iter(training_set),
-                             timeseries_frequency=M3Meta.frequency_map[seasonal_pattern])
-
-        #
-        # Predict
-        #
-        x, x_mask = map(to_tensor, training_set.last_insample_window())
-        model.eval()
-        with t.no_grad():
-            forecasts.extend(model(x, x_mask).cpu().detach().numpy())
-
-    forecasts_df = pd.DataFrame(forecasts, columns=[f'V{i + 1}' for i in range(np.max(M3Meta.horizons))])
-    forecasts_df.index = dataset.ids
-    forecasts_df.index.name = 'id'
-    forecasts_df.to_csv(os.path.join(path, 'forecast.csv'))
+        forecasts_df = pd.DataFrame(forecasts, columns=[f'V{i + 1}' for i in range(np.max(M3Meta.horizons))])
+        forecasts_df.index = dataset.ids
+        forecasts_df.index.name = 'id'
+        forecasts_df.to_csv(os.path.join(self.root, 'forecast.csv'))
 
 
 if __name__ == '__main__':
     logging.root.setLevel(logging.INFO)
-    Fire()
+    Fire(M3Experiment)

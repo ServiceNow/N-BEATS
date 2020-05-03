@@ -1,57 +1,28 @@
-import os
 from typing import Iterator
 
+import gin
 import numpy as np
 import torch as t
 from torch import optim
 
-from common.torch.snapshots import SnapshotManager
 from common.torch.losses import smape_2_loss, mape_loss, mase_loss
-from experiments.utils import to_tensor, to_device
-from experiments.parameters import Parameters
-from models.nbeats import nbeats_generic, nbeats_interpretable
+from common.torch.snapshots import SnapshotManager
+from experiments.utils import to_device, to_tensor
 
 
-def train_nbeats(experiment_path: str,
-                 input_size: int,
-                 output_size: int,
-                 seasonal_pattern: str,
-                 experiment_parameters: Parameters,
-                 training_set: Iterator,
-                 timeseries_frequency: int):
-    snapshot_dir = os.path.join(experiment_path, 'snapshots', seasonal_pattern)
-
-    snapshot_manager = SnapshotManager(snapshot_dir=snapshot_dir,
-                                       logging_frequency=experiment_parameters.logging_frequency_for(seasonal_pattern),
-                                       snapshot_frequency=experiment_parameters.snapshot_frequency_for(
-                                           seasonal_pattern))
-
-    model = nbeats_generic(input_size=input_size,
-                           output_size=output_size,
-                           blocks=experiment_parameters.generic_blocks,
-                           fc_layers=experiment_parameters.fc_layers,
-                           fc_layers_size=experiment_parameters.generic_fc_layers_size,
-                           ) if experiment_parameters.model_type == 'generic' \
-        else nbeats_interpretable(input_size=input_size,
-                                  output_size=output_size,
-                                  trend_blocks=experiment_parameters.trend_blocks,
-                                  trend_fc_layers=experiment_parameters.fc_layers,
-                                  trend_fc_layers_size=experiment_parameters.trend_fc_layers_size,
-                                  degree_of_polynomial=experiment_parameters.degree_of_polynomial,
-                                  seasonality_blocks=experiment_parameters.seasonality_blocks,
-                                  seasonality_fc_layers=experiment_parameters.fc_layers,
-                                  seasonality_fc_layers_size=experiment_parameters.seasonality_fc_layers_size,
-                                  num_of_harmonics=experiment_parameters.num_of_harmonics)
+@gin.configurable
+def trainer(snapshot_manager: SnapshotManager,
+            model: t.nn.Module,
+            training_set: Iterator,
+            timeseries_frequency: int,
+            loss_name: str,
+            iterations: int,
+            learning_rate: float = 0.001):
 
     model = to_device(model)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    optimizer = optim.Adam(model.parameters(),
-                           lr=experiment_parameters.learning_rate,
-                           weight_decay=experiment_parameters.weight_decay)
-
-    training_loss_fn = __loss_fn(experiment_parameters.loss_name)
-
-    iterations = experiment_parameters.iterations_for(seasonal_pattern)
+    training_loss_fn = __loss_fn(loss_name)
 
     lr_decay_step = iterations // 3
     if lr_decay_step == 0:
@@ -79,7 +50,7 @@ def train_nbeats(experiment_path: str,
         optimizer.step()
 
         for param_group in optimizer.param_groups:
-            param_group["lr"] = experiment_parameters.learning_rate * 0.5 ** (i // lr_decay_step)
+            param_group["lr"] = learning_rate * 0.5 ** (i // lr_decay_step)
 
         snapshot_manager.register(iteration=i,
                                   training_loss=float(training_loss),

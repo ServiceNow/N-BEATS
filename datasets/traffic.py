@@ -12,7 +12,7 @@ import patoolib
 from tqdm import tqdm
 
 from common.http_utils import download, url_file_name
-from common.settings import DATASETS_DIR
+from common.settings import DATASETS_PATH
 
 """
 Hourly aggregated dataset from https://archive.ics.uci.edu/ml/datasets/PEMS-SF
@@ -24,14 +24,14 @@ https://github.com/rofuyu/exp-trmf-nips16/blob/master/python/exp-scripts/dataset
 
 DATASET_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases/00204/PEMS-SF.zip'
 
-DATASET_DIR = os.path.join(DATASETS_DIR, 'traffic')
-DATASET_FILE_PATH = os.path.join(DATASET_DIR, url_file_name(DATASET_URL))
+DATASET_PATH = os.path.join(DATASETS_PATH, 'traffic')
+DATASET_FILE_PATH = os.path.join(DATASET_PATH, url_file_name(DATASET_URL))
 
-CACHE_FILE_PATH = os.path.join(DATASET_DIR, 'traffic.npz')
-DATES_CACHE_FILE_PATH = os.path.join(DATASET_DIR, 'dates.npz')
+CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'traffic.npz')
+DATES_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'dates.npz')
 
-TRAIN_LABELS_FILE = os.path.join(DATASET_DIR, 'PEMS_trainlabels')
-TEST_LABELS_FILE = os.path.join(DATASET_DIR, 'PEMS_testlabels')
+TRAIN_LABELS_FILE = os.path.join(DATASET_PATH, 'PEMS_trainlabels')
+TEST_LABELS_FILE = os.path.join(DATASET_PATH, 'PEMS_testlabels')
 
 
 @dataclass()
@@ -98,16 +98,16 @@ class TrafficDataset:
 
     @staticmethod
     def download():
-        if os.path.isdir(DATASET_DIR):
-            logging.info(f'skip: {DATASET_DIR} directory already exists.')
+        if os.path.isdir(DATASET_PATH):
+            logging.info(f'skip: {DATASET_PATH} directory already exists.')
             return
         download(DATASET_URL, DATASET_FILE_PATH)
-        patoolib.extract_archive(DATASET_FILE_PATH, outdir=DATASET_DIR)
-        with open(os.path.join(DATASET_DIR, 'PEMS_train'), 'r') as f:
+        patoolib.extract_archive(DATASET_FILE_PATH, outdir=DATASET_PATH)
+        with open(os.path.join(DATASET_PATH, 'PEMS_train'), 'r') as f:
             train_raw_data = f.readlines()
-        with open(os.path.join(DATASET_DIR, 'PEMS_test'), 'r') as f:
+        with open(os.path.join(DATASET_PATH, 'PEMS_test'), 'r') as f:
             test_raw_data = f.readlines()
-        with open(os.path.join(DATASET_DIR, 'randperm'), 'r') as f:
+        with open(os.path.join(DATASET_PATH, 'randperm'), 'r') as f:
             permutations = f.readlines()
         permutations = np.array(permutations[0].rstrip()[1:-1].split(' ')).astype(np.int)
 

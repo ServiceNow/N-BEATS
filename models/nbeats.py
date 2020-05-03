@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import gin
 import numpy as np
 import torch as t
 
@@ -145,32 +146,34 @@ class NBeats(t.nn.Module):
         return forecast
 
 
-def nbeats_generic(input_size: int, output_size: int,
-                   blocks: int = 30, fc_layers: int = 4, fc_layers_size: int = 512):
+@gin.configurable()
+def generic(input_size: int, output_size: int, blocks: int,
+            stacks: int, layers: int, layer_size: int):
     return NBeats(t.nn.ModuleList([NBeatsGenericBlock(input_size=input_size,
-                                                      fc_layers=fc_layers,
-                                                      fc_layers_size=fc_layers_size,
+                                                      fc_layers=layers,
+                                                      fc_layers_size=layer_size,
                                                       output_size=output_size)
-                                   for _ in range(blocks)]))
+                                   for _ in range(stacks)]))
 
-
-def nbeats_interpretable(input_size: int, output_size: int,
-                         trend_blocks: int = 3,
-                         trend_fc_layers: int = 4,
-                         trend_fc_layers_size: int = 256,
-                         degree_of_polynomial: int = 3,
-                         seasonality_blocks: int = 3,
-                         seasonality_fc_layers: int = 4,
-                         seasonality_fc_layers_size: int = 2048,
-                         num_of_harmonics: int = 1):
+@gin.configurable()
+def interpretable(input_size: int,
+                  output_size: int,
+                  trend_blocks: int,
+                  trend_layers: int,
+                  trend_layer_size: int,
+                  degree_of_polynomial: int,
+                  seasonality_blocks: int,
+                  seasonality_layers: int,
+                  seasonality_layer_size: int,
+                  num_of_harmonics: int):
     trend_block = NBeatsTrendBlock(input_size=input_size,
-                                   fc_layers=trend_fc_layers,
-                                   fc_layers_size=trend_fc_layers_size,
+                                   fc_layers=trend_layers,
+                                   fc_layers_size=trend_layer_size,
                                    degree_of_polynomial=degree_of_polynomial,
                                    output_size=output_size)
     seasonality_block = NBeatsSeasonalityBlock(input_size=input_size,
-                                               fc_layers=seasonality_fc_layers,
-                                               fc_layers_size=seasonality_fc_layers_size,
+                                               fc_layers=seasonality_layers,
+                                               fc_layers_size=seasonality_layer_size,
                                                num_of_harmonics=num_of_harmonics,
                                                output_size=output_size)
     return NBeats(t.nn.ModuleList(

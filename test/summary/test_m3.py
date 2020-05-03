@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 
 from common.http_utils import download, url_file_name
-from common.settings import TESTS_STORAGE
+from common.settings import TESTS_STORAGE_PATH
 from summary.m3 import M3Summary
 
 FORECASTS_URL = 'https://forecasters.org/data/m3comp/M3Forecast.xls'
-FORECASTS_FILE_PATH = os.path.join(TESTS_STORAGE, 'm3', url_file_name(FORECASTS_URL))
+FORECASTS_FILE_PATH = os.path.join(TESTS_STORAGE_PATH, 'm3', url_file_name(FORECASTS_URL))
 
 class TestM3Summary(unittest.TestCase):
     def setUp(self) -> None:

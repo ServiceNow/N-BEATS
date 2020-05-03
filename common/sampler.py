@@ -3,14 +3,16 @@ Timeseries sampler
 """
 import numpy as np
 
+import gin
 
+@gin.configurable
 class TimeseriesSampler:
     def __init__(self,
                  timeseries: np.ndarray,
                  insample_size: int,
                  outsample_size: int,
                  window_sampling_limit: int,
-                 batch_size: int):
+                 batch_size: int = 1024):
         """
         Timeseries sampler.
 

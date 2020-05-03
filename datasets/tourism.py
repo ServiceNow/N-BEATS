@@ -11,12 +11,12 @@ import pandas as pd
 import patoolib
 
 from common.http_utils import download, url_file_name
-from common.settings import DATASETS_DIR
+from common.settings import DATASETS_PATH
 
 DATASET_URL = 'https://robjhyndman.com/data/27-3-Athanasopoulos1.zip'
 
-DATASET_DIR = os.path.join(DATASETS_DIR, 'tourism')
-DATASET_FILE_PATH = os.path.join(DATASET_DIR, url_file_name(DATASET_URL))
+DATASET_PATH = os.path.join(DATASETS_PATH, 'tourism')
+DATASET_FILE_PATH = os.path.join(DATASET_PATH, url_file_name(DATASET_URL))
 
 
 @dataclass()
@@ -57,9 +57,9 @@ class TourismDataset(NamedTuple):
 
         for group in TourismMeta.seasonal_patterns:
 
-            train = pd.read_csv(os.path.join(DATASET_DIR, f'{group.lower()}_in.csv'),
+            train = pd.read_csv(os.path.join(DATASET_PATH, f'{group.lower()}_in.csv'),
                                 header=0, delimiter=",")
-            test = pd.read_csv(os.path.join(DATASET_DIR, f'{group.lower()}_oos.csv'),
+            test = pd.read_csv(os.path.join(DATASET_PATH, f'{group.lower()}_oos.csv'),
                                header=0, delimiter=",")
 
             horizons.extend(list(test.iloc[0].astype(int)))
@@ -95,11 +95,11 @@ class TourismDataset(NamedTuple):
         """
         Download Tourism dataset.
         """
-        if os.path.isdir(DATASET_DIR):
-            logging.info(f'skip: {DATASET_DIR} directory already exists.')
+        if os.path.isdir(DATASET_PATH):
+            logging.info(f'skip: {DATASET_PATH} directory already exists.')
             return
         download(DATASET_URL, DATASET_FILE_PATH)
-        patoolib.extract_archive(DATASET_FILE_PATH, outdir=DATASET_DIR)
+        patoolib.extract_archive(DATASET_FILE_PATH, outdir=DATASET_PATH)
 
     def to_hp_search_training_subset(self):
         return TourismDataset(ids=self.ids,

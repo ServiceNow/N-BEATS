@@ -11,19 +11,19 @@ import numpy as np
 import pandas as pd
 
 from common.http_utils import download, url_file_name
-from common.settings import DATASETS_DIR
+from common.settings import DATASETS_PATH
 
 DATASET_URL = 'https://forecasters.org/data/m3comp/M3C.xls'
 FORECASTS_URL = 'https://forecasters.org/data/m3comp/M3Forecast.xls'
 
-DATASET_DIR = os.path.join(DATASETS_DIR, 'm3')
-DATASET_FILE_PATH = os.path.join(DATASET_DIR, url_file_name(DATASET_URL))
+DATASET_PATH = os.path.join(DATASETS_PATH, 'm3')
+DATASET_FILE_PATH = os.path.join(DATASET_PATH, url_file_name(DATASET_URL))
 
-TRAINING_SET_CACHE_FILE_PATH = os.path.join(DATASET_DIR, 'training.npy')
-TEST_SET_CACHE_FILE_PATH = os.path.join(DATASET_DIR, 'test.npy')
-IDS_CACHE_FILE_PATH = os.path.join(DATASET_DIR, 'ids.npy')
-GROUPS_CACHE_FILE_PATH = os.path.join(DATASET_DIR, 'groups.npy')
-HORIZONS_CACHE_FILE_PATH = os.path.join(DATASET_DIR, 'horizons.npy')
+TRAINING_SET_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'training.npy')
+TEST_SET_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'test.npy')
+IDS_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'ids.npy')
+GROUPS_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'groups.npy')
+HORIZONS_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'horizons.npy')
 
 
 @dataclass()
@@ -77,8 +77,8 @@ class M3Dataset:
         """
         Download M3 dataset if doesn't exist.
         """
-        if os.path.isdir(DATASET_DIR):
-            logging.info(f'skip: {DATASET_DIR} directory already exists.')
+        if os.path.isdir(DATASET_PATH):
+            logging.info(f'skip: {DATASET_PATH} directory already exists.')
             return
 
         download(DATASET_URL, DATASET_FILE_PATH)

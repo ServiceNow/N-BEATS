@@ -22,13 +22,13 @@ init:
 dataset:
 	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} python datasets/main.py build
 
-experiment: .require-name .require-config
-	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} python experiments/${name}/main.py build \
-		--experiment_id=${EXPERIMENT_ID} --config=${config}
-
-run: .require-name .require-config .require-instance
+build: .require-config
 	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} \
-		   bash -c "`cat ${ROOT}/storage/experiments/${EXPERIMENT_ID}/instances/${instance}/command`"
+ 		python $(dir ${config})main.py --config_path=${config} build_ensemble
+
+run: .require-command
+	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} \
+		   bash -c "`cat ${ROOT}/${command}`"
 
 notebook: .require-port
 	docker run -d --rm ${DOCKER_PARAMETERS} -e HOME=/tmp -p $(port):8888 $(IMAGE) \
@@ -37,26 +37,14 @@ notebook: .require-port
 test:
 	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} python -m unittest
 
-obuild:
-	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} \
-		python $(experiment)/main.py init --name=$(name)
-orun:
-	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} \
-		   bash -c "`cat ${ROOT}/storage/${experiment}/${instance}/command`"
-
-.require-name:
-ifndef name
-	$(error name is required)
-endif
-
 .require-config:
 ifndef config
 	$(error config is required)
 endif
 
-.require-instance:
-ifndef instance
-	$(error instance is required)
+.require-command:
+ifndef command
+	$(error command is required)
 endif
 
 .require-port:

@@ -13,7 +13,7 @@ import patoolib
 from tqdm import tqdm
 
 from common.http_utils import download, url_file_name
-from common.settings import DATASETS_DIR
+from common.settings import DATASETS_PATH
 
 """
 Hourly aggregated dataset from https://archive.ics.uci.edu/ml/datasets/ElectricityLoadDiagrams20112014
@@ -25,7 +25,7 @@ https://github.com/rofuyu/exp-trmf-nips16/blob/master/python/exp-scripts/dataset
 
 DATASET_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip'
 
-DATASET_DIR = os.path.join(DATASETS_DIR, 'electricity')
+DATASET_DIR = os.path.join(DATASETS_PATH, 'electricity')
 DATASET_FILE_PATH = os.path.join(DATASET_DIR, url_file_name(DATASET_URL))
 RAW_DATA_FILE_PATH = os.path.join(DATASET_DIR, 'LD2011_2014.txt')
 

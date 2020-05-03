@@ -13,20 +13,20 @@ import patoolib
 from tqdm import tqdm
 
 from common.http_utils import download, url_file_name
-from common.settings import DATASETS_DIR
+from common.settings import DATASETS_PATH
 
 TRAINING_DATASET_URL = 'https://www.m4.unic.ac.cy/wp-content/uploads/2017/12/M4DataSet.zip'
 TEST_DATASET_URL = 'https://www.m4.unic.ac.cy/wp-content/uploads/2018/07/M-test-set.zip'
 INFO_URL = 'https://www.m4.unic.ac.cy/wp-content/uploads/2018/12/M4Info.csv'
 
-DATASET_DIR = os.path.join(DATASETS_DIR, 'm4')
+DATASET_PATH = os.path.join(DATASETS_PATH, 'm4')
 
-TRAINING_DATASET_FILE_PATH = os.path.join(DATASET_DIR, url_file_name(TRAINING_DATASET_URL))
-TEST_DATASET_FILE_PATH = os.path.join(DATASET_DIR, url_file_name(TEST_DATASET_URL))
-INFO_FILE_PATH = os.path.join(DATASET_DIR, url_file_name(INFO_URL))
+TRAINING_DATASET_FILE_PATH = os.path.join(DATASET_PATH, url_file_name(TRAINING_DATASET_URL))
+TEST_DATASET_FILE_PATH = os.path.join(DATASET_PATH, url_file_name(TEST_DATASET_URL))
+INFO_FILE_PATH = os.path.join(DATASET_PATH, url_file_name(INFO_URL))
 
-TRAINING_DATASET_CACHE_FILE_PATH = os.path.join(DATASET_DIR, 'training.npz')
-TEST_DATASET_CACHE_FILE_PATH = os.path.join(DATASET_DIR, 'test.npz')
+TRAINING_DATASET_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'training.npz')
+TEST_DATASET_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'test.npz')
 
 
 @dataclass()
@@ -58,8 +58,8 @@ class M4Dataset:
         """
         Download M4 dataset if doesn't exist.
         """
-        if os.path.isdir(DATASET_DIR):
-            logging.info(f'skip: {DATASET_DIR} directory already exists.')
+        if os.path.isdir(DATASET_PATH):
+            logging.info(f'skip: {DATASET_PATH} directory already exists.')
             return
 
         # Download and load m4 info file.
@@ -72,8 +72,8 @@ class M4Dataset:
         def build_cache(files: str, cache_path: str) -> None:
             timeseries_dict = OrderedDict(list(zip(m4_ids, [[]] * len(m4_ids))))
             logging.info(f'Caching {files}')
-            patoolib.extract_archive(TRAINING_DATASET_FILE_PATH, outdir=DATASET_DIR)
-            for train_csv in tqdm(glob(os.path.join(DATASET_DIR, files))):
+            patoolib.extract_archive(TRAINING_DATASET_FILE_PATH, outdir=DATASET_PATH)
+            for train_csv in tqdm(glob(os.path.join(DATASET_PATH, files))):
                 dataset = pd.read_csv(train_csv)
                 dataset.set_index(dataset.columns[0], inplace=True)
                 for m4id, row in dataset.iterrows():

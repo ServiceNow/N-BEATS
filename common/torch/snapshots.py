@@ -7,23 +7,29 @@ import time
 from pathlib import Path
 from typing import Dict, Optional
 
+import gin
 import numpy as np
 import pandas as pd
 import torch as t
 
+@gin.configurable()
 class SnapshotManager:
     """
     PyTorch Snapshot Manager.
     Only one, the "latest", state is supported.
     """
-    def __init__(self, snapshot_dir: str, logging_frequency: int, snapshot_frequency: int):
+    def __init__(self,
+                 snapshot_dir: str,
+                 total_iterations: int,
+                 logging_frequency: int = 100,
+                 snapshot_frequency: int = 1000):
         self.model_snapshot_file = os.path.join(snapshot_dir, 'model')
         self.optimizer_snapshot_file = os.path.join(snapshot_dir, 'optimizer')
         self.losses_file = os.path.join(snapshot_dir, 'losses')
         self.iteration_file = os.path.join(snapshot_dir, 'iteration')
         self.time_tracking_file = os.path.join(snapshot_dir, 'time')
-        self.logging_frequency = max(logging_frequency, 1)
-        self.snapshot_frequency = max(snapshot_frequency, 1)
+        self.logging_frequency = min(logging_frequency, total_iterations // 3)
+        self.snapshot_frequency = min(snapshot_frequency, total_iterations)
         self.start_time = None
         self.losses = {'training': {}, 'validation': {}}
         self.time_track = {}
