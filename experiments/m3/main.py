@@ -6,11 +6,11 @@ import pandas as pd
 import torch as t
 from fire import Fire
 
+from common.sampler import TimeseriesSampler
 from datasets.m3 import M3Dataset, M3Meta
 from experiments.experiment import create_experiment
 from experiments.m3.parameters import parameters
 from experiments.parameters import Parameters
-from experiments.samplers import UnivariateTimeseriesSampler
 from experiments.trainer import train_nbeats
 from experiments.utils import get_module_path, experiment_path
 from experiments.utils import to_tensor
@@ -42,11 +42,11 @@ def run(path: str):
         if experiment_parameters.validation_mode:
             training_values = np.array([v[:-horizon] for v in training_values])
 
-        training_set = UnivariateTimeseriesSampler(timeseries=training_values,
-                                                   insample_size=input_size,
-                                                   outsample_size=horizon,
-                                                   window_sampling_limit=int(history_size_in_horizons * horizon),
-                                                   batch_size=experiment_parameters.training_batch_size)
+        training_set = TimeseriesSampler(timeseries=training_values,
+                                         insample_size=input_size,
+                                         outsample_size=horizon,
+                                         window_sampling_limit=int(history_size_in_horizons * horizon),
+                                         batch_size=experiment_parameters.training_batch_size)
 
         # Create/restore trained model
         model = train_nbeats(experiment_path=path,
@@ -60,7 +60,7 @@ def run(path: str):
         #
         # Predict
         #
-        x, x_mask = map(to_tensor, training_set.sequential_latest_insamples())
+        x, x_mask = map(to_tensor, training_set.last_insample_window())
         model.eval()
         with t.no_grad():
             forecasts.extend(model(x, x_mask).cpu().detach().numpy())
