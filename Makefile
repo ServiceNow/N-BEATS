@@ -14,6 +14,8 @@ ifdef gpu
 	DOCKER_PARAMETERS += --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=$(gpu)
 endif
 
+.PHONY: test
+
 init:
 	docker build . -t ${IMAGE}
 
@@ -32,13 +34,15 @@ notebook: .require-port
 	docker run -d --rm ${DOCKER_PARAMETERS} -e HOME=/tmp -p $(port):8888 $(IMAGE) \
 		   bash -c "jupyter lab --ip=0.0.0.0 --no-browser --NotebookApp.token=''"
 
+test:
+	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} python -m unittest
+
 obuild:
 	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} \
 		python $(experiment)/main.py init --name=$(name)
 orun:
 	docker run -it --rm ${DOCKER_PARAMETERS} ${IMAGE} \
 		   bash -c "`cat ${ROOT}/storage/${experiment}/${instance}/command`"
-
 
 .require-name:
 ifndef name
