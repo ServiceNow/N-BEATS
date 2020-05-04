@@ -1,3 +1,6 @@
+"""
+M3 Experiment
+"""
 import logging
 import os
 from typing import Dict
@@ -10,10 +13,10 @@ from fire import Fire
 
 from common.experiment import Experiment
 from common.sampler import TimeseriesSampler
+from common.torch.ops import to_tensor
 from common.torch.snapshots import SnapshotManager
 from datasets.m3 import M3Dataset, M3Meta
 from experiments.trainer import trainer
-from experiments.utils import to_tensor
 from models.nbeats import generic, interpretable
 from summary.utils import group_values
 

@@ -7,7 +7,7 @@ from torch import optim
 
 from common.torch.losses import smape_2_loss, mape_loss, mase_loss
 from common.torch.snapshots import SnapshotManager
-from experiments.utils import to_device, to_tensor
+from common.torch.ops import default_device, to_tensor
 
 
 @gin.configurable
@@ -19,7 +19,7 @@ def trainer(snapshot_manager: SnapshotManager,
             iterations: int,
             learning_rate: float = 0.001):
 
-    model = to_device(model)
+    model = model.to(default_device())
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     training_loss_fn = __loss_fn(loss_name)
@@ -34,7 +34,6 @@ def trainer(snapshot_manager: SnapshotManager,
     # Training Loop
     #
     snapshot_manager.enable_time_tracking()
-    training_set = iter(training_set)
     for i in range(iteration + 1, iterations + 1):
         model.train()
         x, x_mask, y, y_mask = map(to_tensor, next(training_set))

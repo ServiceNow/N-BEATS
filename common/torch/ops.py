@@ -12,6 +12,14 @@ def default_device() -> t.device:
     """
     return t.device('cuda' if t.cuda.is_available() else 'cpu')
 
+def to_tensor(array: np.ndarray) -> t.Tensor:
+    """
+    Convert numpy array to tensor on default device.
+
+    :param array: Numpy array to convert.
+    :return: PyTorch tensor on default device.
+    """
+    return t.tensor(array, dtype=t.float32).to(default_device())
 
 def divide_no_nan(a, b):
     """
