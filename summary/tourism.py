@@ -11,11 +11,17 @@ from datasets.tourism import TourismDataset, TourismMeta
 from summary.utils import group_values
 
 class TourismSummary:
+
     def __init__(self):
         self.test_set = TourismDataset.load(training=False)
 
     def evaluate(self, forecast: np.ndarray) -> Dict[str, float]:
+        """
+        Evaluate forecasts for Tourism dataset.
 
+        :param forecast: Forecasts. Shape: timeseries, time
+        :return: MAPE for each seasonal pattern.
+        """
         results = OrderedDict()
         cumulative_metrics = 0
         cumulative_points = 0

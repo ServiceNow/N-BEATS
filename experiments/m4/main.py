@@ -53,10 +53,9 @@ class M4Experiment(Experiment):
             else:
                 raise Exception(f'Unknown model type {model_type}')
 
-            # Create/restore trained model
+            # Train model
             snapshot_manager = SnapshotManager(snapshot_dir=os.path.join(self.root, 'snapshots', seasonal_pattern),
                                                total_iterations=iterations[seasonal_pattern])
-            # Create/restore trained model
             model = trainer(snapshot_manager=snapshot_manager,
                             model=model,
                             training_set=iter(training_set),
@@ -64,9 +63,7 @@ class M4Experiment(Experiment):
                             loss_name=loss,
                             iterations=iterations[seasonal_pattern])
 
-            #
-            # Predict
-            #
+            # Build forecasts
             x, x_mask = map(to_tensor, training_set.last_insample_window())
             model.eval()
             with t.no_grad():

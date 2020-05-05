@@ -57,23 +57,30 @@ class ElectricityDataset:
             values=np.load(CACHE_FILE_PATH, allow_pickle=True),
             dates=np.load(DATES_CACHE_FILE_PATH, allow_pickle=True))
 
-    def take_before_date(self, cut_date: str, include_cut_date: bool = True) -> 'ElectricityDataset':
+    def split_by_date(self, cut_date: str, include_cut_date: bool = True) -> Tuple['ElectricityDataset', 'ElectricityDataset']:
         """
-        Split dataset by date and return the first part of the split
+        Split dataset by date.
 
         :param cut_date: Cut date in "%Y-%m-%d %H" format
         :param include_cut_date: Include cut_date in the split if true, not otherwise.
-        :return: Electricity dataset which contains data before (and on) the given date.
+        :return: Two parts of dataset: the left part contains all points before the cut point
+        and the right part contains all datpoints on and after the cut point.
         """
         date = datetime.strptime(cut_date, '%Y-%m-%d %H')
-        indices = []
+        left_indices = []
+        right_indices = []
         for i, p in enumerate(self.dates):
             record_date = datetime.strptime(p, '%Y-%m-%d %H')
             if record_date < date or (include_cut_date and record_date == date):
-                indices.append(i)
+                left_indices.append(i)
+            else:
+                right_indices.append(i)
         return ElectricityDataset(ids=self.ids,
-                                  values=self.values[:, indices],
-                                  dates=self.dates[indices])
+                                  values=self.values[:, left_indices],
+                                  dates=self.dates[left_indices]), \
+               ElectricityDataset(ids=self.ids,
+                                  values=self.values[:, right_indices],
+                                  dates=self.dates[right_indices])
 
     def split(self, cut_point: int) -> Tuple['ElectricityDataset', 'ElectricityDataset']:
         """

@@ -12,18 +12,15 @@ from summary.utils import group_values
 
 
 class M4Summary:
-    """
-    M4 Summary.
-    """
     def __init__(self):
         self.training_set = M4Dataset.load(training=True)
         self.test_set = M4Dataset.load(training=False)
 
     def evaluate(self, forecast: np.ndarray):
         """
-        Evaluate forecasts using M3 test dataset.
+        Evaluate forecasts using M4 test dataset.
 
-        :param forecast: Forecasts. Shape: timeseries, horizon.
+        :param forecast: Forecasts. Shape: timeseries, time.
         :return: sMAPE and OWA grouped by seasonal patterns.
         """
         forecast = np.array([v[~np.isnan(v)] for v in forecast])

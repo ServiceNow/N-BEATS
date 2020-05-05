@@ -1,5 +1,5 @@
 """
-M3 Summary.
+M3 Summary
 """
 from collections import OrderedDict
 from typing import Dict
@@ -11,9 +11,6 @@ from datasets.m3 import M3Dataset, M3Meta
 from summary.utils import group_values
 
 class M3Summary:
-    """
-    M3 Summary
-    """
     def __init__(self):
         self.test_set = M3Dataset.load(training=False)
 

@@ -60,7 +60,7 @@ class NBeats(t.nn.Module):
         return forecast
 
 
-class Generic(t.nn.Module):
+class GenericBasis(t.nn.Module):
     """
     Generic basis function.
     """
@@ -73,7 +73,7 @@ class Generic(t.nn.Module):
         return theta[:, :self.backcast_size], theta[:, -self.forecast_size:]
 
 
-class TrendFunction(t.nn.Module):
+class TrendBasis(t.nn.Module):
     """
     Polynomial function to model trend.
     """
@@ -94,7 +94,7 @@ class TrendFunction(t.nn.Module):
         return backcast, forecast
 
 
-class SeasonalityFunction(t.nn.Module):
+class SeasonalityBasis(t.nn.Module):
     """
     Harmonic functions to model seasonality.
     """
@@ -117,8 +117,6 @@ class SeasonalityFunction(t.nn.Module):
                                                     requires_grad=False)
 
     def forward(self, theta: t.Tensor):
-        print(f'theta: {theta.shape}')
-        print(f'back: {theta[:, 2 * theta.shape[1]:3 * theta.shape[1]].shape}')
         params_per_harmonic = theta.shape[1] // 4
         backcast_harmonics_cos = t.einsum('bp,pt->bt', theta[:, 2 * params_per_harmonic:3 * params_per_harmonic],
                                           self.backcast_cos_template)
