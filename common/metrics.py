@@ -1,3 +1,6 @@
+"""
+Metrics functions using numpy arrays.
+"""
 import numpy as np
 
 Forecast = np.ndarray

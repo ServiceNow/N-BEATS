@@ -18,12 +18,15 @@ from common.settings import DATASETS_PATH
 TRAINING_DATASET_URL = 'https://www.m4.unic.ac.cy/wp-content/uploads/2017/12/M4DataSet.zip'
 TEST_DATASET_URL = 'https://www.m4.unic.ac.cy/wp-content/uploads/2018/07/M-test-set.zip'
 INFO_URL = 'https://www.m4.unic.ac.cy/wp-content/uploads/2018/12/M4Info.csv'
+NAIVE2_FORECAST_URL = 'https://github.com/M4Competition/M4-methods/raw/master/Point%20Forecasts/submission-Naive2.rar'
 
 DATASET_PATH = os.path.join(DATASETS_PATH, 'm4')
 
 TRAINING_DATASET_FILE_PATH = os.path.join(DATASET_PATH, url_file_name(TRAINING_DATASET_URL))
 TEST_DATASET_FILE_PATH = os.path.join(DATASET_PATH, url_file_name(TEST_DATASET_URL))
 INFO_FILE_PATH = os.path.join(DATASET_PATH, url_file_name(INFO_URL))
+NAIVE2_FORECAST_FILE_PATH = os.path.join(DATASET_PATH, 'submission-Naive2.csv')
+
 
 TRAINING_DATASET_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'training.npz')
 TEST_DATASET_CACHE_FILE_PATH = os.path.join(DATASET_PATH, 'test.npz')
@@ -62,17 +65,12 @@ class M4Dataset:
             logging.info(f'skip: {DATASET_PATH} directory already exists.')
             return
 
-        # Download and load m4 info file.
         download(INFO_URL, INFO_FILE_PATH)
         m4_ids = pd.read_csv(INFO_FILE_PATH).M4id.values
-
-        # Download and cache test set
-        download(TRAINING_DATASET_URL, TRAINING_DATASET_FILE_PATH)
 
         def build_cache(files: str, cache_path: str) -> None:
             timeseries_dict = OrderedDict(list(zip(m4_ids, [[]] * len(m4_ids))))
             logging.info(f'Caching {files}')
-            patoolib.extract_archive(TRAINING_DATASET_FILE_PATH, outdir=DATASET_PATH)
             for train_csv in tqdm(glob(os.path.join(DATASET_PATH, files))):
                 dataset = pd.read_csv(train_csv)
                 dataset.set_index(dataset.columns[0], inplace=True)
@@ -81,8 +79,16 @@ class M4Dataset:
                     timeseries_dict[m4id] = values[~np.isnan(values)]
             np.array(list(timeseries_dict.values())).dump(cache_path)
 
+        download(TRAINING_DATASET_URL, TRAINING_DATASET_FILE_PATH)
+        patoolib.extract_archive(TRAINING_DATASET_FILE_PATH, outdir=DATASET_PATH)
         build_cache('*-train.csv', TRAINING_DATASET_CACHE_FILE_PATH)
+        download(TEST_DATASET_URL, TEST_DATASET_FILE_PATH)
+        patoolib.extract_archive(TEST_DATASET_FILE_PATH, outdir=DATASET_PATH)
         build_cache('*-test.csv', TEST_DATASET_CACHE_FILE_PATH)
+
+        naive2_archive = os.path.join(DATASET_PATH, url_file_name(NAIVE2_FORECAST_URL))
+        download(NAIVE2_FORECAST_URL, naive2_archive)
+        patoolib.extract_archive(naive2_archive, outdir=DATASET_PATH)
 
 
 @dataclass()

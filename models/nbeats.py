@@ -1,136 +1,50 @@
+"""
+N-BEATS Model.
+"""
 from typing import Tuple
 
-import gin
 import numpy as np
 import torch as t
 
 
-class NBeatsFC(t.nn.Module):
+class NBeatsBlock(t.nn.Module):
+    """
+    N-BEATS block which takes a basis function as an argument.
+    """
     def __init__(self,
-                 input_size: int,
-                 fc_layers: int,
-                 output_size: int):
+                 input_size,
+                 theta_size: int,
+                 basis_function: t.nn.Module,
+                 layers: int,
+                 layer_size: int):
+        """
+        N-BEATS block.
+
+        :param input_size: Insample size.
+        :param theta_size:  Number of parameters for the basis function.
+        :param basis_function: Basis function which takes the parameters and produces backcast and forecast.
+        :param layers: Number of layers.
+        :param layer_size: Layer size.
+        """
         super().__init__()
-        self.fc_layers = t.nn.ModuleList([t.nn.Linear(in_features=input_size, out_features=output_size)] +
-                                         [t.nn.Linear(in_features=output_size, out_features=output_size)
-                                          for _ in range(fc_layers - 1)])
-
-    def forward(self, x: t.Tensor) -> t.Tensor:
-        output = x
-        for layer in self.fc_layers:
-            output = t.relu(layer(output))
-        return output
-
-
-class NBeatsGenericBlock(t.nn.Module):
-    def __init__(self,
-                 input_size: int,
-                 fc_layers: int,
-                 fc_layers_size: int,
-                 output_size: int):
-        super().__init__()
-        self.fc = NBeatsFC(input_size=input_size,
-                           fc_layers=fc_layers,
-                           output_size=fc_layers_size)
-        self.basis = t.nn.Linear(in_features=fc_layers_size, out_features=input_size + output_size)
-
-        self.backcast_dump = None
-        self.forecast_dump = None
+        self.layers = t.nn.ModuleList([t.nn.Linear(in_features=input_size, out_features=layer_size)] +
+                                      [t.nn.Linear(in_features=layer_size, out_features=layer_size)
+                                       for _ in range(layers - 1)])
+        self.basis_parameters = t.nn.Linear(in_features=layer_size, out_features=theta_size)
+        self.basis_function = basis_function
 
     def forward(self, x: t.Tensor) -> Tuple[t.Tensor, t.Tensor]:
-        input_size = x.shape[1]
-        output = self.basis(self.fc(x))
-        backcast = output[:, :input_size]
-        forecast = output[:, input_size:]
-        self.backcast_dump = backcast
-        self.forecast_dump = forecast
-        return backcast, forecast
-
-
-class NBeatsTrendBlock(t.nn.Module):
-    def __init__(self,
-                 input_size: int,
-                 fc_layers: int,
-                 fc_layers_size: int,
-                 degree_of_polynomial: int,
-                 output_size: int):
-        super().__init__()
-        self.polynomial_size = degree_of_polynomial + 1  # degree of polynomial with constant term
-        self.fc = NBeatsFC(input_size=input_size,
-                           fc_layers=fc_layers,
-                           output_size=fc_layers_size)
-        self.basis = t.nn.Linear(in_features=fc_layers_size, out_features=2 * self.polynomial_size)
-        self.output_size = output_size
-        self.backcast_time = np.concatenate([np.power(np.arange(input_size, dtype=np.float) / input_size, i)[None, :]
-                                             for i in range(self.polynomial_size)])
-        self.forecast_time = np.concatenate([np.power(np.arange(output_size, dtype=np.float) / output_size, i)[None, :]
-                                             for i in range(self.polynomial_size)])
-        self.backcast_dump = None
-        self.forecast_dump = None
-
-    def forward(self, x: t.Tensor):
-        thetas = self.basis(self.fc(x))
-        backcast = t.einsum('bp,pt->bt', thetas[:, self.polynomial_size:], x.new(self.backcast_time))
-        forecast = t.einsum('bp,pt->bt', thetas[:, :self.polynomial_size], x.new(self.forecast_time))
-        self.backcast_dump = backcast
-        self.forecast_dump = forecast
-        return backcast, forecast
-
-
-class NBeatsSeasonalityBlock(t.nn.Module):
-    def __init__(self,
-                 input_size: int,
-                 fc_layers: int,
-                 fc_layers_size: int,
-                 num_of_harmonics: int,
-                 output_size: int):
-        super().__init__()
-        self.basis_parameters = int(np.ceil(num_of_harmonics / 2 * output_size) - (num_of_harmonics - 1))
-
-        self.fc = NBeatsFC(input_size=input_size,
-                           fc_layers=fc_layers,
-                           output_size=fc_layers_size)
-        self.basis = t.nn.Linear(in_features=fc_layers_size, out_features=4 * self.basis_parameters)
-
-        frequency = np.append(np.zeros(1, dtype=np.float32),
-                              np.arange(num_of_harmonics, num_of_harmonics / 2 * output_size,
-                                        dtype=np.float32) / num_of_harmonics)[None, :]
-        backcast_grid = -2 * np.pi * (np.arange(input_size, dtype=np.float32)[:, None] / output_size) * frequency
-        forecast_grid = 2 * np.pi * (np.arange(output_size, dtype=np.float32)[:, None] / output_size) * frequency
-        self.backcast_cos_template = np.transpose(np.cos(backcast_grid))
-        self.backcast_sin_template = np.transpose(np.sin(backcast_grid))
-        self.forecast_cos_template = np.transpose(np.cos(forecast_grid))
-        self.forecast_sin_template = np.transpose(np.sin(forecast_grid))
-
-        self.backcast_dump = None
-        self.forecast_dump = None
-
-    def forward(self, x: t.Tensor):
-        harmonics_weights = self.basis(self.fc(x))
-
-        backcast_harmonics_cos = t.einsum('bp,pt->bt',
-                                          harmonics_weights[:, 2 * self.basis_parameters:3 * self.basis_parameters],
-                                          x.new(self.backcast_cos_template))
-        backcast_harmonics_sin = t.einsum('bp,pt->bt',
-                                          harmonics_weights[:, 3 * self.basis_parameters:],
-                                          x.new(self.backcast_sin_template))
-        backcast = backcast_harmonics_sin + backcast_harmonics_cos
-
-        forecast_harmonics_cos = t.einsum('bp,pt->bt',
-                                          harmonics_weights[:, :self.basis_parameters],
-                                          x.new(self.forecast_cos_template))
-        forecast_harmonics_sin = t.einsum('bp,pt->bt',
-                                          harmonics_weights[:, self.basis_parameters:2 * self.basis_parameters],
-                                          x.new(self.forecast_sin_template))
-        forecast = forecast_harmonics_sin + forecast_harmonics_cos
-
-        self.backcast_dump = backcast
-        self.forecast_dump = forecast
-
-        return backcast, forecast
+        block_input = x
+        for layer in self.layers:
+            block_input = t.relu(layer(block_input))
+        basis_parameters = self.basis_parameters(block_input)
+        return self.basis_function(basis_parameters)
 
 
 class NBeats(t.nn.Module):
+    """
+    N-Beats Model.
+    """
     def __init__(self, blocks: t.nn.ModuleList):
         super().__init__()
         self.blocks = blocks
@@ -146,35 +60,74 @@ class NBeats(t.nn.Module):
         return forecast
 
 
-@gin.configurable()
-def generic(input_size: int, output_size: int, blocks: int,
-            stacks: int, layers: int, layer_size: int):
-    return NBeats(t.nn.ModuleList([NBeatsGenericBlock(input_size=input_size,
-                                                      fc_layers=layers,
-                                                      fc_layers_size=layer_size,
-                                                      output_size=output_size)
-                                   for _ in range(stacks)]))
+class Generic(t.nn.Module):
+    """
+    Generic basis function.
+    """
+    def __init__(self, backcast_size: int, forecast_size: int):
+        super().__init__()
+        self.backcast_size = backcast_size
+        self.forecast_size = forecast_size
 
-@gin.configurable()
-def interpretable(input_size: int,
-                  output_size: int,
-                  trend_blocks: int,
-                  trend_layers: int,
-                  trend_layer_size: int,
-                  degree_of_polynomial: int,
-                  seasonality_blocks: int,
-                  seasonality_layers: int,
-                  seasonality_layer_size: int,
-                  num_of_harmonics: int):
-    trend_block = NBeatsTrendBlock(input_size=input_size,
-                                   fc_layers=trend_layers,
-                                   fc_layers_size=trend_layer_size,
-                                   degree_of_polynomial=degree_of_polynomial,
-                                   output_size=output_size)
-    seasonality_block = NBeatsSeasonalityBlock(input_size=input_size,
-                                               fc_layers=seasonality_layers,
-                                               fc_layers_size=seasonality_layer_size,
-                                               num_of_harmonics=num_of_harmonics,
-                                               output_size=output_size)
-    return NBeats(t.nn.ModuleList(
-        [trend_block for _ in range(trend_blocks)] + [seasonality_block for _ in range(seasonality_blocks)]))
+    def forward(self, theta: t.Tensor):
+        return theta[:, :self.backcast_size], theta[:, -self.forecast_size:]
+
+
+class TrendFunction(t.nn.Module):
+    """
+    Polynomial function to model trend.
+    """
+    def __init__(self, degree_of_polynomial: int, backcast_size: int, forecast_size: int):
+        super().__init__()
+        self.polynomial_size = degree_of_polynomial + 1  # degree of polynomial with constant term
+        self.backcast_time = t.nn.Parameter(
+            t.tensor(np.concatenate([np.power(np.arange(backcast_size, dtype=np.float) / backcast_size, i)[None, :]
+                                     for i in range(self.polynomial_size)]), dtype=t.float32),
+            requires_grad=False)
+        self.forecast_time = t.nn.Parameter(
+            t.tensor(np.concatenate([np.power(np.arange(forecast_size, dtype=np.float) / forecast_size, i)[None, :]
+                                     for i in range(self.polynomial_size)]), dtype=t.float32), requires_grad=False)
+
+    def forward(self, theta: t.Tensor):
+        backcast = t.einsum('bp,pt->bt', theta[:, self.polynomial_size:], self.backcast_time)
+        forecast = t.einsum('bp,pt->bt', theta[:, :self.polynomial_size], self.forecast_time)
+        return backcast, forecast
+
+
+class SeasonalityFunction(t.nn.Module):
+    """
+    Harmonic functions to model seasonality.
+    """
+    def __init__(self, harmonics: int, backcast_size: int, forecast_size: int):
+        super().__init__()
+        self.frequency = np.append(np.zeros(1, dtype=np.float32),
+                                   np.arange(harmonics, harmonics / 2 * forecast_size,
+                                             dtype=np.float32) / harmonics)[None, :]
+        backcast_grid = -2 * np.pi * (
+                np.arange(backcast_size, dtype=np.float32)[:, None] / forecast_size) * self.frequency
+        forecast_grid = 2 * np.pi * (
+                np.arange(forecast_size, dtype=np.float32)[:, None] / forecast_size) * self.frequency
+        self.backcast_cos_template = t.nn.Parameter(t.tensor(np.transpose(np.cos(backcast_grid)), dtype=t.float32),
+                                                    requires_grad=False)
+        self.backcast_sin_template = t.nn.Parameter(t.tensor(np.transpose(np.sin(backcast_grid)), dtype=t.float32),
+                                                    requires_grad=False)
+        self.forecast_cos_template = t.nn.Parameter(t.tensor(np.transpose(np.cos(forecast_grid)), dtype=t.float32),
+                                                    requires_grad=False)
+        self.forecast_sin_template = t.nn.Parameter(t.tensor(np.transpose(np.sin(forecast_grid)), dtype=t.float32),
+                                                    requires_grad=False)
+
+    def forward(self, theta: t.Tensor):
+        print(f'theta: {theta.shape}')
+        print(f'back: {theta[:, 2 * theta.shape[1]:3 * theta.shape[1]].shape}')
+        params_per_harmonic = theta.shape[1] // 4
+        backcast_harmonics_cos = t.einsum('bp,pt->bt', theta[:, 2 * params_per_harmonic:3 * params_per_harmonic],
+                                          self.backcast_cos_template)
+        backcast_harmonics_sin = t.einsum('bp,pt->bt', theta[:, 3 * params_per_harmonic:], self.backcast_sin_template)
+        backcast = backcast_harmonics_sin + backcast_harmonics_cos
+        forecast_harmonics_cos = t.einsum('bp,pt->bt',
+                                          theta[:, :params_per_harmonic], self.forecast_cos_template)
+        forecast_harmonics_sin = t.einsum('bp,pt->bt', theta[:, params_per_harmonic:2 * params_per_harmonic],
+                                          self.forecast_sin_template)
+        forecast = forecast_harmonics_sin + forecast_harmonics_cos
+
+        return backcast, forecast

@@ -4,7 +4,6 @@ M3 Dataset
 import logging
 import os
 from dataclasses import dataclass
-from typing import NamedTuple
 
 import fire
 import numpy as np

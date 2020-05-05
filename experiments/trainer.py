@@ -1,3 +1,6 @@
+"""
+Models training logic.
+"""
 from typing import Iterator
 
 import gin

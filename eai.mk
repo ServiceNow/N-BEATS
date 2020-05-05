@@ -20,7 +20,7 @@ run-all:
 				-w /experiment \
 				-e PYTHONPATH=/experiment \
 				-e STORAGE=/experiment/storage \
-				--cpu=1 --gpu=1 --mem=64 --bid=0 --restartable -- \
+				--cpu=1 --gpu=1 --mem=64 --bid=5 --restartable -- \
 				bash -c "`cat ${ROOT}/${command}/$${instance}/command`"; \
 	done
 

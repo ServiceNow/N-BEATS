@@ -11,10 +11,19 @@ from datasets.m3 import M3Dataset, M3Meta
 from summary.utils import group_values
 
 class M3Summary:
+    """
+    M3 Summary
+    """
     def __init__(self):
         self.test_set = M3Dataset.load(training=False)
 
     def evaluate(self, forecast: np.ndarray) -> Dict[str, float]:
+        """
+        Evaluate forecasts using M3 test dataset.
+
+        :param forecast: Forecasts. Shape: timeseries, horizon.
+        :return: sMAPE grouped by seasonal patterns.
+        """
         results = OrderedDict()
         cumulative_metrics = 0
         cumulative_points = 0

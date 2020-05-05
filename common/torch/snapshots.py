@@ -28,8 +28,8 @@ class SnapshotManager:
         self.losses_file = os.path.join(snapshot_dir, 'losses')
         self.iteration_file = os.path.join(snapshot_dir, 'iteration')
         self.time_tracking_file = os.path.join(snapshot_dir, 'time')
-        self.logging_frequency = min(logging_frequency, total_iterations // 3)
-        self.snapshot_frequency = min(snapshot_frequency, total_iterations)
+        self.logging_frequency = max(1, min(logging_frequency, total_iterations // 3))
+        self.snapshot_frequency = max(1, min(snapshot_frequency, total_iterations))
         self.start_time = None
         self.losses = {'training': {}, 'validation': {}}
         self.time_track = {}

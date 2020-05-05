@@ -1,19 +1,23 @@
-build.experiment_name='m3_generic'
+build.experiment_name='m4_generic'
 
 instance.model_type = 'generic'
 
 instance.history_size = {
-    'M3Year': 20,
-    'M3Quart': 20,
-    'M3Month': 20,
-    'M3Other': 10
+    'Yearly': 1.5,
+    'Quarterly': 1.5,
+    'Monthly': 1.5,
+    'Weekly': 10,
+    'Daily': 10,
+    'Hourly': 10
 }
 
 instance.iterations = {
-    'M3Year': 20,
-    'M3Quart': 250,
-    'M3Month': 10000,
-    'M3Other': 250
+    'Yearly': 15000,
+    'Quarterly': 15000,
+    'Monthly': 15000,
+    'Weekly': 5000,
+    'Daily': 5000,
+    'Hourly': 5000
 }
 
 generic.layer_size = 512
