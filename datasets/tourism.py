@@ -4,7 +4,6 @@ Tourism Dataset
 import logging
 import os
 from dataclasses import dataclass
-from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -37,7 +36,7 @@ class TourismMeta:
 
 
 @dataclass()
-class TourismDataset(NamedTuple):
+class TourismDataset:
     ids: np.ndarray
     groups: np.ndarray
     horizons: np.ndarray

@@ -1,5 +1,5 @@
 """
-M3 Summary unit test
+M3 summary unit test
 """
 import os
 import unittest

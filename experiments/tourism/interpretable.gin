@@ -1,0 +1,35 @@
+build.experiment_name='tourism_interpretable'
+
+instance.model_type = 'interpretable'
+
+instance.history_size = {
+    'Yearly': 20,
+    'Quarterly': 10,
+    'Monthly': 20
+}
+
+instance.iterations = {
+    'Yearly': 30,
+    'Quarterly': 500,
+    'Monthly': 300
+}
+
+interpretable.seasonality_layer_size = 2048
+interpretable.seasonality_blocks = 3
+interpretable.seasonality_layers = 2
+interpretable.trend_layer_size = 256
+interpretable.degree_of_polynomial = 2
+interpretable.trend_blocks = 3
+interpretable.trend_layers = 2
+interpretable.num_of_harmonics = 1
+
+TimeseriesSampler.batch_size = 1024
+trainer.learning_rate = 0.001
+
+SnapshotManager.logging_frequency = 100
+SnapshotManager.snapshot_frequency = 1000
+
+# Ensemble parameters
+build.repeats = 10
+build.lookbacks = [2, 3, 4, 5, 6, 7]
+build.losses = ['MAPE']

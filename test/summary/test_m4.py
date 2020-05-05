@@ -1,5 +1,5 @@
 """
-M4 Summary unit test.
+M4 summary unit test.
 """
 import os
 import unittest
