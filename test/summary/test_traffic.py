@@ -28,8 +28,8 @@ class TestTrafficSummary(unittest.TestCase):
                                         TrafficMeta.horizon, axis=1)
             mean_forecasts = window_forecast if len(mean_forecasts) == 0 else np.concatenate(
                 [mean_forecasts, window_forecast], axis=1)
-        nd_value = summary.evaluate(mean_forecasts, nd)['metric']
-        nrmse_value = summary.evaluate(mean_forecasts, nrmse)['metric']
+        nd_value = summary.evaluate(mean_forecasts, nd)['all']
+        nrmse_value = summary.evaluate(mean_forecasts, nrmse)['all']
 
         # as per Table 2 in https://www.cs.utexas.edu/~rofuyu/papers/tr-mf-nips.pdf
         self.assertTrue(np.allclose(nd_value, 0.56))

@@ -13,7 +13,7 @@ upload-code:
 	 	  * dmitri@dc1-wks-01.elementai.net:/mnt/scratch/dmitri/nbeats
 
 run-all:
-	for instance in $$(ls ${ROOT}/${command}); do \
+	for instance in $$(ls ${ROOT}/${experiment}); do \
 		borgy submit \
 				--image=${IMAGE} \
 				-v ${ROOT}:/experiment \
@@ -21,6 +21,6 @@ run-all:
 				-e PYTHONPATH=/experiment \
 				-e STORAGE=/experiment/storage \
 				--cpu=1 --gpu=1 --mem=64 --bid=5 --restartable -- \
-				bash -c "`cat ${ROOT}/${command}/$${instance}/command`"; \
+				bash -c "`cat ${ROOT}/${experiment}/$${instance}/command`"; \
 	done
 
