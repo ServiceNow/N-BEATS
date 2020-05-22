@@ -121,7 +121,7 @@ class SeasonalityBasis(t.nn.Module):
         forecast_grid = 2 * np.pi * (
                 np.arange(forecast_size, dtype=np.float32)[:, None] / forecast_size) * self.frequency
         self.register_buffer('backcast_cos_template', t.tensor(np.transpose(np.cos(backcast_grid)), dtype=t.float32))
-        self.register_buffer('backcast_cos_template', t.tensor(np.transpose(np.sin(backcast_grid)), dtype=t.float32))
+        self.register_buffer('backcast_sin_template', t.tensor(np.transpose(np.sin(backcast_grid)), dtype=t.float32))
         self.register_buffer('forecast_cos_template', t.tensor(np.transpose(np.cos(forecast_grid)), dtype=t.float32))
         self.register_buffer('forecast_sin_template', t.tensor(np.transpose(np.sin(forecast_grid)), dtype=t.float32))
 
