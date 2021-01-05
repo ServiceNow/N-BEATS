@@ -30,8 +30,6 @@ def build():
     """
     Download all datasets.
     """
-    # Fix for: Hostname mismatch, certificate is not valid for 'mcompetitions.unic.ac.cy'
-    ssl._create_default_https_context = ssl._create_unverified_context
 
     logging.info('M4 Dataset')
     M4Dataset.download()
