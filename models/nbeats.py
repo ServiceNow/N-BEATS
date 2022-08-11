@@ -94,13 +94,12 @@ class TrendBasis(t.nn.Module):
     def __init__(self, degree_of_polynomial: int, backcast_size: int, forecast_size: int):
         super().__init__()
         self.polynomial_size = degree_of_polynomial + 1  # degree of polynomial with constant term
-        self.backcast_time = t.nn.Parameter(
-            t.tensor(np.concatenate([np.power(np.arange(backcast_size, dtype=np.float) / backcast_size, i)[None, :]
-                                     for i in range(self.polynomial_size)]), dtype=t.float32),
-            requires_grad=False)
-        self.forecast_time = t.nn.Parameter(
-            t.tensor(np.concatenate([np.power(np.arange(forecast_size, dtype=np.float) / forecast_size, i)[None, :]
-                                     for i in range(self.polynomial_size)]), dtype=t.float32), requires_grad=False)
+        self.register_buffer('backcast_time', 
+            t.Tensor(np.concatenate([np.power(np.arange(backcast_size) / backcast_size, i)[None, :]
+                                     for i in range(self.polynomial_size)])))
+        self.register_buffer('forecast_time',
+            t.Tensor(np.concatenate([np.power(np.arange(forecast_size) / forecast_size, i)[None, :]
+                                     for i in range(self.polynomial_size)])))
 
     def forward(self, theta: t.Tensor):
         backcast = t.einsum('bp,pt->bt', theta[:, self.polynomial_size:], self.backcast_time)
@@ -114,21 +113,16 @@ class SeasonalityBasis(t.nn.Module):
     """
     def __init__(self, harmonics: int, backcast_size: int, forecast_size: int):
         super().__init__()
-        self.frequency = np.append(np.zeros(1, dtype=np.float32),
-                                   np.arange(harmonics, harmonics / 2 * forecast_size,
-                                             dtype=np.float32) / harmonics)[None, :]
+        frequency = np.append(np.zeros(1),
+                              np.arange(harmonics, harmonics / 2 * forecast_size) / harmonics)[None, :]
         backcast_grid = -2 * np.pi * (
-                np.arange(backcast_size, dtype=np.float32)[:, None] / forecast_size) * self.frequency
+            np.arange(backcast_size)[:, None] / forecast_size) * frequency
         forecast_grid = 2 * np.pi * (
-                np.arange(forecast_size, dtype=np.float32)[:, None] / forecast_size) * self.frequency
-        self.backcast_cos_template = t.nn.Parameter(t.tensor(np.transpose(np.cos(backcast_grid)), dtype=t.float32),
-                                                    requires_grad=False)
-        self.backcast_sin_template = t.nn.Parameter(t.tensor(np.transpose(np.sin(backcast_grid)), dtype=t.float32),
-                                                    requires_grad=False)
-        self.forecast_cos_template = t.nn.Parameter(t.tensor(np.transpose(np.cos(forecast_grid)), dtype=t.float32),
-                                                    requires_grad=False)
-        self.forecast_sin_template = t.nn.Parameter(t.tensor(np.transpose(np.sin(forecast_grid)), dtype=t.float32),
-                                                    requires_grad=False)
+            np.arange(forecast_size)[:, None] / forecast_size) * frequency
+        self.register_buffer('backcast_cos_template', t.Tensor(np.transpose(np.cos(backcast_grid))))
+        self.register_buffer('backcast_sin_template', t.Tensor(np.transpose(np.sin(backcast_grid))))
+        self.register_buffer('forecast_cos_template', t.Tensor(np.transpose(np.cos(forecast_grid))))
+        self.register_buffer('forecast_sin_template', t.Tensor(np.transpose(np.sin(forecast_grid))))
 
     def forward(self, theta: t.Tensor):
         params_per_harmonic = theta.shape[1] // 4
